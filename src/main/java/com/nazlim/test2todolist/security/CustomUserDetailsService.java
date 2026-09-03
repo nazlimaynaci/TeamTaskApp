@@ -22,10 +22,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         AppUser u = users.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // role şart değil, boş bırakalım
         return User.withUsername(u.getUsername())
                 .password(u.getPassword())
-                .authorities("USER")
+                .authorities("ROLE_" + u.getRole().name())
                 .build();
     }
 }

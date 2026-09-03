@@ -19,6 +19,10 @@ public class AppUser {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @OneToMany(mappedBy = "user")
     private List<Todo> todos;
 
@@ -52,5 +56,13 @@ public class AppUser {
 
     public void setTodos(List<Todo> todos) {
         this.todos = todos;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }

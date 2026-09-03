@@ -18,7 +18,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest req) {
         auth.register(req);
-        return new AuthResponse("Üye oluşturuldu",null);
+        return new AuthResponse("Üye oluşturuldu", null, null);
     }
 
     @PostMapping("/login")
