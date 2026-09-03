@@ -20,6 +20,9 @@ window.onload = function () {
     } else {
         getTodos();
     }
+
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
 };
 
 // "Beni hatırla" işaretliyse token localStorage'da, değilse sessionStorage'da durur;
@@ -345,6 +348,70 @@ function rejectTodo(id) {
         })
         .catch(err => alert(err.message))
         .finally(loadAssignedByMe);
+}
+
+function loadNotifications() {
+    fetch(`${BASE_URL}/api/notifications`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(res => res.json())
+        .then(data => {
+            const unreadCount = data.filter(n => !n.read).length;
+            const badge = document.getElementById("notifBadge");
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = "flex";
+            } else {
+                badge.style.display = "none";
+            }
+
+            const list = document.getElementById("notifList");
+            list.innerHTML = "";
+
+            if (data.length === 0) {
+                list.innerHTML = "<p>Henüz bildirim yok.</p>";
+                return;
+            }
+
+            data.forEach(n => {
+                const date = new Date(n.createdAt).toLocaleString("tr-TR");
+                list.innerHTML += `
+                <div class="todo-card">
+                    <div class="todo-content">
+                        <div class="todo-title ${n.read ? "" : "unread-notif"}">${n.message}</div>
+                        <div class="todo-meta"><span class="todo-date">${date}</span></div>
+                    </div>
+                    ${!n.read ? `<button class="icon-btn" onclick="markNotificationRead(${n.id})">✔️</button>` : ""}
+                </div>
+                `;
+            });
+        })
+        .catch(err => console.error(err));
+}
+
+function toggleNotifications() {
+    loadNotifications();
+    document.getElementById("notifModal").style.display = "block";
+}
+
+function closeNotifications() {
+    document.getElementById("notifModal").style.display = "none";
+}
+
+function markNotificationRead(id) {
+    fetch(`${BASE_URL}/api/notifications/read/${id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(() => loadNotifications());
+}
+
+function markAllNotificationsRead() {
+    fetch(`${BASE_URL}/api/notifications/read-all`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(() => loadNotifications());
 }
 
 function updateCounter(todos) {
