@@ -20,7 +20,6 @@ function register() {
                 alert(data.message || "Kayıt başarısız.");
                 return;
             }
-            alert("Register başarılı!");
             window.location.href = "login.html";
         })
         .catch(err => console.error(err));
@@ -49,8 +48,6 @@ function login() {
 
             // TOKEN KAYDET
             localStorage.setItem("token", data.token);
-
-            alert("Login başarılı!");
 
             window.location.href = "todos.html";
         })
