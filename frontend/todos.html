@@ -27,6 +27,31 @@
 
     <main class="content-area">
 
+        <section id="managerAssignPanel" class="task-panel" style="display:none">
+            <div class="section-head">
+                <h2>👔 Görev Ata</h2>
+            </div>
+            <div class="task-row">
+                <select id="assigneeSelect" class="soft-input flex-grow"></select>
+                <input type="text" id="assignTitle" class="soft-input flex-grow" placeholder="🌸 Görev başlığı">
+                <input type="text" id="assignDescription" class="soft-input flex-grow" placeholder="📝 Açıklama">
+                <input type="date" id="assignDueDate" class="soft-input small-input">
+                <select id="assignPriority" class="soft-input small-input">
+                    <option value="low">Düşük</option>
+                    <option value="medium">Orta</option>
+                    <option value="high">Yüksek</option>
+                </select>
+                <button class="add-btn" onclick="assignTodo()">Ata</button>
+            </div>
+        </section>
+
+        <section id="assignedByMeSection" class="todo-section" style="display:none">
+            <div class="section-head">
+                <h2>📋 Atadıklarım</h2>
+            </div>
+            <div id="assignedByMeList" class="todo-list"></div>
+        </section>
+
         <section class="task-panel">
             <div class="task-row">
                 <input type="text" id="title" class="soft-input flex-grow" placeholder="🌸 Görev başlığı">

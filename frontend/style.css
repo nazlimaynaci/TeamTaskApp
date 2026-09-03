@@ -474,6 +474,26 @@ body {
     color: #b93838;
 }
 
+.status-progress {
+    background: #dcecff;
+    color: #2e69b3;
+}
+
+.status-pending {
+    background: #ffe6c9;
+    color: #b56a15;
+}
+
+.status-approved {
+    background: #d7f5df;
+    color: #268a4e;
+}
+
+.status-rejected {
+    background: #ffd9d9;
+    color: #b93838;
+}
+
 .completed {
     text-decoration: line-through;
     opacity: 0.65;

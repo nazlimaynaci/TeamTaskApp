@@ -10,6 +10,13 @@ window.onload = function () {
     }
     showRoleBadge();
     getTodos();
+
+    if (getRole() === "MANAGER") {
+        document.getElementById("managerAssignPanel").style.display = "block";
+        document.getElementById("assignedByMeSection").style.display = "block";
+        loadWorkers();
+        loadAssignedByMe();
+    }
 };
 
 // "Beni hatırla" işaretliyse token localStorage'da, değilse sessionStorage'da durur;
@@ -133,6 +140,7 @@ function getTodos() {
 
                             ${dueDateBadge(todo)}
                             ${priorityBadge(todo)}
+                            ${assignedByBadge(todo)}
                         </div>
                     </div>
 
@@ -178,6 +186,119 @@ function priorityBadge(todo) {
             <span class="priority-badge priority-${todo.priority}">${label}</span>
         </div>
     `;
+}
+
+function assignedByBadge(todo) {
+    if (!todo.assignedByUsername) return "";
+
+    return `
+        <div class="todo-meta">
+            <span class="priority-badge status-progress">👔 Atayan: ${todo.assignedByUsername}</span>
+        </div>
+    `;
+}
+
+function approvalStatusBadge(todo) {
+    const labels = {
+        NOT_APPLICABLE: { text: "Devam Ediyor", cls: "status-progress" },
+        PENDING: { text: "Onay Bekliyor", cls: "status-pending" },
+        APPROVED: { text: "Onaylandı", cls: "status-approved" },
+        REJECTED: { text: "Reddedildi", cls: "status-rejected" }
+    };
+    const info = labels[todo.approvalStatus] || { text: todo.approvalStatus, cls: "status-progress" };
+
+    return `<span class="priority-badge ${info.cls}">${info.text}</span>`;
+}
+
+function loadWorkers() {
+    fetch(`${BASE_URL}/api/users/workers`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("assigneeSelect");
+            select.innerHTML = data
+                .map(w => `<option value="${w.id}">${w.fullName} (${w.username})</option>`)
+                .join("");
+        })
+        .catch(err => console.error(err));
+}
+
+function assignTodo() {
+    const assigneeId = document.getElementById("assigneeSelect").value;
+    const title = document.getElementById("assignTitle").value.trim();
+    const description = document.getElementById("assignDescription").value.trim();
+    const dueDate = document.getElementById("assignDueDate").value || null;
+    const priority = document.getElementById("assignPriority").value;
+
+    if (!title) {
+        alert("Görev başlığı boş olamaz.");
+        return;
+    }
+    if (!assigneeId) {
+        alert("Atanacak çalışan bulunamadı.");
+        return;
+    }
+
+    fetch(`${BASE_URL}/api/todos/assign`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({
+            title: title,
+            description: description,
+            dueDate: dueDate,
+            priority: priority,
+            assigneeId: Number(assigneeId)
+        })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Görev atanamadı");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            document.getElementById("assignTitle").value = "";
+            document.getElementById("assignDescription").value = "";
+            document.getElementById("assignDueDate").value = "";
+            loadAssignedByMe();
+        });
+}
+
+function loadAssignedByMe() {
+    fetch(`${BASE_URL}/api/todos/assigned-by-me`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById("assignedByMeList");
+            list.innerHTML = "";
+
+            data.forEach(todo => {
+                list.innerHTML += `
+                <div class="todo-card">
+                    <div class="todo-left">
+                        <div class="todo-content">
+                            <div class="todo-title ${todo.completed ? "completed" : ""}">
+                                ${todo.title || ""}
+                            </div>
+                            <div class="todo-desc">${todo.description || ""}</div>
+
+                            <div class="todo-meta">
+                                <span class="priority-badge status-progress">🧑‍💻 ${todo.assigneeUsername}</span>
+                            </div>
+                            ${dueDateBadge(todo)}
+                            ${priorityBadge(todo)}
+                            <div class="todo-meta">${approvalStatusBadge(todo)}</div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+        })
+        .catch(err => console.error(err));
 }
 
 function updateCounter(todos) {
