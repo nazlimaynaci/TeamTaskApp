@@ -26,9 +26,12 @@ public class TodoServiceImpl implements TodoService {
 
     private final UserRepository userRepository;
 
-    public TodoServiceImpl(TodoRepository repo,UserRepository userRepository) {
+    private final NotificationService notificationService;
+
+    public TodoServiceImpl(TodoRepository repo, UserRepository userRepository, NotificationService notificationService) {
         this.repo = repo;
-        this.userRepository=userRepository;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -69,6 +72,7 @@ public class TodoServiceImpl implements TodoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
 
         boolean wasCompleted = existing.isCompleted();
+        boolean justBecamePending = false;
 
         existing.setTitle(request.getTitle());
         existing.setDescription(request.getDescription());
@@ -79,6 +83,7 @@ public class TodoServiceImpl implements TodoService {
         if (existing.getAssignedBy() != null) {
             if (!wasCompleted && existing.isCompleted()) {
                 existing.setApprovalStatus(ApprovalStatus.PENDING);
+                justBecamePending = true;
             } else if (!existing.isCompleted()
                     && (existing.getApprovalStatus() == ApprovalStatus.PENDING
                         || existing.getApprovalStatus() == ApprovalStatus.REJECTED)) {
@@ -87,6 +92,11 @@ public class TodoServiceImpl implements TodoService {
         }
 
         Todo saved = repo.save(existing);
+
+        if (justBecamePending) {
+            notificationService.notifyPendingApproval(saved.getAssignedBy(), saved);
+        }
+
         return TodoMapper.toResponse(saved);
     }
 
@@ -130,6 +140,7 @@ public class TodoServiceImpl implements TodoService {
         entity.setAssignedBy(manager);
 
         Todo saved = repo.save(entity);
+        notificationService.notifyTaskAssigned(assignee, saved);
         return TodoMapper.toResponse(saved);
     }
 
@@ -175,6 +186,7 @@ public class TodoServiceImpl implements TodoService {
         todo.setRejectionReason(null);
 
         Todo saved = repo.save(todo);
+        notificationService.notifyApproved(saved.getUser(), saved);
         return TodoMapper.toResponse(saved);
     }
 
@@ -194,6 +206,7 @@ public class TodoServiceImpl implements TodoService {
         todo.setRejectionReason(request.reason());
 
         Todo saved = repo.save(todo);
+        notificationService.notifyRejected(saved.getUser(), saved, request.reason());
         return TodoMapper.toResponse(saved);
     }
 
