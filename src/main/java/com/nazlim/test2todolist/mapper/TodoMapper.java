@@ -29,7 +29,8 @@ public class TodoMapper {
                 todo.getPriority(),
                 assignedByUsername,
                 assigneeUsername,
-                todo.getApprovalStatus().name()
+                todo.getApprovalStatus().name(),
+                todo.getRejectionReason()
         );
     }
 }

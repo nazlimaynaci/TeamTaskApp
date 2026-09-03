@@ -172,6 +172,7 @@ public class TodoServiceImpl implements TodoService {
         }
 
         todo.setApprovalStatus(ApprovalStatus.APPROVED);
+        todo.setRejectionReason(null);
 
         Todo saved = repo.save(todo);
         return TodoMapper.toResponse(saved);
@@ -190,6 +191,7 @@ public class TodoServiceImpl implements TodoService {
 
         todo.setApprovalStatus(ApprovalStatus.REJECTED);
         todo.setCompleted(false);
+        todo.setRejectionReason(request.reason());
 
         Todo saved = repo.save(todo);
         return TodoMapper.toResponse(saved);

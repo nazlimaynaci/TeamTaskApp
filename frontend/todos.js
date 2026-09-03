@@ -144,6 +144,7 @@ function getTodos() {
                             ${dueDateBadge(todo)}
                             ${priorityBadge(todo)}
                             ${assignedByBadge(todo)}
+                            ${todo.assignedByUsername ? `<div class="todo-meta">${approvalStatusBadge(todo)}</div>` : ""}
                         </div>
                     </div>
 
@@ -209,8 +210,11 @@ function approvalStatusBadge(todo) {
         REJECTED: { text: "Reddedildi", cls: "status-rejected" }
     };
     const info = labels[todo.approvalStatus] || { text: todo.approvalStatus, cls: "status-progress" };
+    const reasonText = todo.approvalStatus === "REJECTED" && todo.rejectionReason
+        ? `: ${todo.rejectionReason}`
+        : "";
 
-    return `<span class="priority-badge ${info.cls}">${info.text}</span>`;
+    return `<span class="priority-badge ${info.cls}">${info.text}${reasonText}</span>`;
 }
 
 function loadWorkers() {

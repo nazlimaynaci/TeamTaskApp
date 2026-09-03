@@ -12,9 +12,10 @@ public class TodoResponse {
     private String assignedByUsername;
     private String assigneeUsername;
     private String approvalStatus;
+    private String rejectionReason;
 
     public TodoResponse(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority,
-                         String assignedByUsername, String assigneeUsername, String approvalStatus) {
+                         String assignedByUsername, String assigneeUsername, String approvalStatus, String rejectionReason) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -24,6 +25,7 @@ public class TodoResponse {
         this.assignedByUsername = assignedByUsername;
         this.assigneeUsername = assigneeUsername;
         this.approvalStatus = approvalStatus;
+        this.rejectionReason = rejectionReason;
     }
 
 
@@ -43,5 +45,8 @@ public class TodoResponse {
     }
     public String getApprovalStatus() {
         return approvalStatus;
+    }
+    public String getRejectionReason() {
+        return rejectionReason;
     }
 }

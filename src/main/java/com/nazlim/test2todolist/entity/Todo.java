@@ -40,6 +40,8 @@ public class Todo {
     @Column(nullable = false)
     private ApprovalStatus approvalStatus = ApprovalStatus.NOT_APPLICABLE;
 
+    private String rejectionReason;
+
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
         this.title = title;
@@ -115,5 +117,13 @@ public class Todo {
 
     public void setApprovalStatus(ApprovalStatus approvalStatus) {
         this.approvalStatus = approvalStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }
