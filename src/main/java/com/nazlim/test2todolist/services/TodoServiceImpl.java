@@ -104,8 +104,15 @@ public class TodoServiceImpl implements TodoService {
     public void delete(Long id) {
         AppUser currentUser = getCurrentUser();
 
-        Todo existing = repo.findByIdAndUser(id, currentUser)
+        Todo existing = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
+
+        boolean isOwner = existing.getUser() != null && existing.getUser().getId().equals(currentUser.getId());
+        boolean isAssigner = existing.getAssignedBy() != null && existing.getAssignedBy().getId().equals(currentUser.getId());
+
+        if (!isOwner && !isAssigner) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id);
+        }
 
         repo.delete(existing);
     }

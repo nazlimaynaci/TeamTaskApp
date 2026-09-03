@@ -49,6 +49,7 @@
         <section id="assignedByMeSection" class="todo-section" style="display:none">
             <div class="section-head">
                 <h2>📋 Atadıklarım</h2>
+                <button class="secondary-btn" onclick="deleteCompletedAssigned()">🗑️ Tamamlananları Sil</button>
             </div>
             <div id="assignedByMeList" class="todo-list"></div>
         </section>
@@ -71,6 +72,7 @@
             <div class="section-head">
                 <h2>Görev Listesi</h2>
                 <span id="todoCounter" class="todo-counter"></span>
+                <button class="secondary-btn" onclick="deleteCompletedPersonal()">🗑️ Tamamlananları Sil</button>
             </div>
 
             <div class="filter-tabs">

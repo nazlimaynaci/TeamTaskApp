@@ -430,6 +430,44 @@ function deleteTodo(id) {
         .then(() => getTodos());
 }
 
+// Bir listedeki tamamlanmış (ama hala onay bekleyen değil) görevleri toplu siler.
+// fetchUrl: hangi listeden okunacağı, reloadFn: silme bitince ekranı yenileyecek fonksiyon.
+function deleteCompleted(fetchUrl, reloadFn) {
+    fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(res => res.json())
+        .then(data => {
+            const ids = data
+                .filter(t => t.completed && t.approvalStatus !== "PENDING")
+                .map(t => t.id);
+
+            if (ids.length === 0) {
+                alert("Silinecek tamamlanmış görev yok.");
+                return;
+            }
+            if (!confirm(`${ids.length} tamamlanmış görev silinecek, emin misin?`)) {
+                return;
+            }
+
+            return Promise.all(
+                ids.map(id => fetch(`${BASE_URL}/api/todos/delete/${id}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${getToken()}` }
+                }))
+            ).then(reloadFn);
+        })
+        .catch(err => console.error(err));
+}
+
+function deleteCompletedPersonal() {
+    deleteCompleted(`${BASE_URL}/api/todos`, getTodos);
+}
+
+function deleteCompletedAssigned() {
+    deleteCompleted(`${BASE_URL}/api/todos/assigned-by-me`, loadAssignedByMe);
+}
+
 function toggleStatus(todo) {
     fetch(`${BASE_URL}/api/todos/update/${todo.id}`, {
         method: "PUT",
