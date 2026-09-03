@@ -23,6 +23,15 @@
         <h2>Register</h2>
 
         <div class="form-group">
+            <label>Hesap Türü</label>
+            <div class="filter-tabs">
+                <button type="button" class="filter-tab" data-role="MANAGER" onclick="selectRole('MANAGER')">👔 Yönetici Olarak Kaydol</button>
+                <button type="button" class="filter-tab active" data-role="WORKER" onclick="selectRole('WORKER')">🧑‍💻 Çalışan Olarak Kaydol</button>
+            </div>
+            <input type="hidden" id="role" value="WORKER">
+        </div>
+
+        <div class="form-group">
             <label>Kullanıcı Adı</label>
             <input type="text" id="username" placeholder="Kullanıcı adı oluştur">
         </div>

@@ -4,8 +4,25 @@ let currentId = null;
 let currentFilter = "all";
 
 window.onload = function () {
+    if (!localStorage.getItem("token")) {
+        window.location.href = "login.html";
+        return;
+    }
+    showRoleBadge();
     getTodos();
 };
+
+function showRoleBadge() {
+    const role = localStorage.getItem("role");
+    const badge = document.getElementById("roleBadge");
+    if (role === "MANAGER") {
+        badge.textContent = "👔 Yönetici";
+        badge.className = "priority-badge priority-high";
+    } else {
+        badge.textContent = "🧑‍💻 Çalışan";
+        badge.className = "priority-badge priority-low";
+    }
+}
 
 function setFilter(filter) {
     currentFilter = filter;
@@ -223,5 +240,6 @@ function saveUpdate() {
 
 function logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
     window.location.href = "login.html";
 }

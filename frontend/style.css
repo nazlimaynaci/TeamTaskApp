@@ -200,6 +200,9 @@ body {
     top: 24px;
     right: 24px;
     z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .logout-icon-btn {

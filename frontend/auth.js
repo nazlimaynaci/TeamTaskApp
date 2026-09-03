@@ -1,8 +1,16 @@
 const BASE_URL = "http://localhost:8080";
 
+function selectRole(role) {
+    document.getElementById("role").value = role;
+    document.querySelectorAll(".filter-tab[data-role]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.role === role);
+    });
+}
+
 function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value;
 
     fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
@@ -11,7 +19,8 @@ function register() {
         },
         body: JSON.stringify({
             username: username,
-            password: password
+            password: password,
+            role: role
         })
     })
         .then(res => res.json().then(data => ({ ok: res.ok, data })))
@@ -46,8 +55,9 @@ function login() {
                 return;
             }
 
-            // TOKEN KAYDET
+            // TOKEN VE ROL KAYDET
             localStorage.setItem("token", data.token);
+            localStorage.setItem("role", data.role);
 
             window.location.href = "todos.html";
         })
