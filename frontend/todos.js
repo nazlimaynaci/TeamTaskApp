@@ -381,7 +381,7 @@ function loadNotifications() {
                         <div class="todo-title ${n.read ? "" : "unread-notif"}">${n.message}</div>
                         <div class="todo-meta"><span class="todo-date">${date}</span></div>
                     </div>
-                    ${!n.read ? `<button class="icon-btn" onclick="markNotificationRead(${n.id})">✔️</button>` : ""}
+                    ${!n.read ? `<button class="icon-btn" onclick="markNotificationRead(${n.id})">🗑️</button>` : ""}
                 </div>
                 `;
             });

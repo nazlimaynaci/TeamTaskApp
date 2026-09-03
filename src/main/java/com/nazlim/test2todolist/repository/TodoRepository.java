@@ -4,6 +4,7 @@ import com.nazlim.test2todolist.entity.ApprovalStatus;
 import com.nazlim.test2todolist.entity.Todo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.nazlim.test2todolist.entity.AppUser;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import java.util.List;
@@ -22,4 +23,6 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     Optional<Todo> findByIdAndAssignedBy(Long id, AppUser assignedBy);
 
     List<Todo> findByAssignedByAndApprovalStatus(AppUser assignedBy, ApprovalStatus approvalStatus);
+
+    List<Todo> findByCompletedFalseAndReminderSentFalseAndDueDateBetween(LocalDate start, LocalDate end);
 }

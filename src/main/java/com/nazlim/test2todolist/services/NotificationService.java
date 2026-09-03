@@ -11,6 +11,7 @@ public interface NotificationService {
     void notifyPendingApproval(AppUser manager, Todo todo);
     void notifyApproved(AppUser worker, Todo todo);
     void notifyRejected(AppUser worker, Todo todo, String reason);
+    void notifyDueSoon(AppUser recipient, Todo todo, long daysRemaining);
     List<NotificationResponse> getMyNotifications();
     void markRead(Long id);
     void markAllRead();

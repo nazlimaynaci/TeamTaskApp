@@ -53,6 +53,13 @@ public class NotificationServiceImpl implements NotificationService {
         create(worker, message, todo.getId());
     }
 
+    @Override
+    public void notifyDueSoon(AppUser recipient, Todo todo, long daysRemaining) {
+        String when = daysRemaining <= 0 ? "bugün" : daysRemaining + " gün içinde";
+        String message = "\"" + todo.getTitle() + "\" görevinin bitiş tarihine " + when + " kaldı";
+        create(recipient, message, todo.getId());
+    }
+
     private void create(AppUser recipient, String message, Long relatedTodoId) {
         Notification n = new Notification();
         n.setRecipient(recipient);
@@ -82,17 +89,14 @@ public class NotificationServiceImpl implements NotificationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu bildirim sana ait değil");
         }
 
-        n.setRead(true);
-        repo.save(n);
+        repo.delete(n);
     }
 
     @Override
     public void markAllRead() {
         AppUser currentUser = getCurrentUser();
 
-        List<Notification> unread = repo.findByRecipientAndReadFalse(currentUser);
-        unread.forEach(n -> n.setRead(true));
-        repo.saveAll(unread);
+        repo.deleteAll(repo.findByRecipientOrderByCreatedAtDesc(currentUser));
     }
 
     private AppUser getCurrentUser() {

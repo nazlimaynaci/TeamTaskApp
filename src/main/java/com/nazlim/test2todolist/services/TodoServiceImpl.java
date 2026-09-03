@@ -17,7 +17,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class TodoServiceImpl implements TodoService {
@@ -73,12 +75,17 @@ public class TodoServiceImpl implements TodoService {
 
         boolean wasCompleted = existing.isCompleted();
         boolean justBecamePending = false;
+        LocalDate oldDueDate = existing.getDueDate();
 
         existing.setTitle(request.getTitle());
         existing.setDescription(request.getDescription());
         existing.setCompleted(request.isCompleted());
         existing.setDueDate(request.getDueDate());
         existing.setPriority(request.getPriority());
+
+        if (!Objects.equals(oldDueDate, existing.getDueDate())) {
+            existing.setReminderSent(false);
+        }
 
         if (existing.getAssignedBy() != null) {
             if (!wasCompleted && existing.isCompleted()) {

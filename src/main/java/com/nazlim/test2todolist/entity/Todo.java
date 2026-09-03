@@ -42,6 +42,9 @@ public class Todo {
 
     private String rejectionReason;
 
+    @Column(nullable = false)
+    private boolean reminderSent = false;
+
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
         this.title = title;
@@ -125,5 +128,13 @@ public class Todo {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public boolean isReminderSent() {
+        return reminderSent;
+    }
+
+    public void setReminderSent(boolean reminderSent) {
+        this.reminderSent = reminderSent;
     }
 }
