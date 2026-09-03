@@ -9,13 +9,16 @@ window.onload = function () {
         return;
     }
     showRoleBadge();
-    getTodos();
 
     if (getRole() === "MANAGER") {
         document.getElementById("managerAssignPanel").style.display = "block";
         document.getElementById("assignedByMeSection").style.display = "block";
+        document.getElementById("personalTaskPanel").style.display = "none";
+        document.getElementById("personalTodoSection").style.display = "none";
         loadWorkers();
         loadAssignedByMe();
+    } else {
+        getTodos();
     }
 };
 
