@@ -297,11 +297,50 @@ function loadAssignedByMe() {
                             <div class="todo-meta">${approvalStatusBadge(todo)}</div>
                         </div>
                     </div>
+
+                    ${todo.approvalStatus === "PENDING" ? `
+                    <div class="todo-actions">
+                        <button class="icon-btn" onclick="approveTodo(${todo.id})">✅</button>
+                        <button class="icon-btn" onclick="rejectTodo(${todo.id})">❌</button>
+                    </div>
+                    ` : ""}
                 </div>
                 `;
             });
         })
         .catch(err => console.error(err));
+}
+
+function approveTodo(id) {
+    fetch(`${BASE_URL}/api/todos/approve/${id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${getToken()}` }
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Onaylanamadı");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(loadAssignedByMe);
+}
+
+function rejectTodo(id) {
+    const reason = prompt("Red sebebi (opsiyonel):");
+
+    fetch(`${BASE_URL}/api/todos/reject/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ reason: reason || null })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Reddedilemedi");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(loadAssignedByMe);
 }
 
 function updateCounter(todos) {

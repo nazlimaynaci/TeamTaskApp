@@ -1,6 +1,7 @@
 package com.nazlim.test2todolist.controllers;
 
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
+import com.nazlim.test2todolist.dto.RejectTodoRequest;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.services.TodoService;
@@ -69,5 +70,17 @@ public class TodoController {
     @PreAuthorize("hasRole('MANAGER')")
     public List<TodoResponse> byApprovalStatus(@PathVariable String status) {
         return service.getByApprovalStatus(status);
+    }
+
+    @PutMapping("/approve/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public TodoResponse approve(@PathVariable Long id) {
+        return service.approve(id);
+    }
+
+    @PutMapping("/reject/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public TodoResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectTodoRequest req) {
+        return service.reject(id, req != null ? req : new RejectTodoRequest(null));
     }
 }

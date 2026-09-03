@@ -2,6 +2,7 @@ package com.nazlim.test2todolist.services;
 
 import com.nazlim.test2todolist.auth.UserRepository;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
+import com.nazlim.test2todolist.dto.RejectTodoRequest;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.entity.AppUser;
@@ -67,11 +68,23 @@ public class TodoServiceImpl implements TodoService {
         Todo existing = repo.findByIdAndUser(id, currentUser)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
 
+        boolean wasCompleted = existing.isCompleted();
+
         existing.setTitle(request.getTitle());
         existing.setDescription(request.getDescription());
         existing.setCompleted(request.isCompleted());
         existing.setDueDate(request.getDueDate());
         existing.setPriority(request.getPriority());
+
+        if (existing.getAssignedBy() != null) {
+            if (!wasCompleted && existing.isCompleted()) {
+                existing.setApprovalStatus(ApprovalStatus.PENDING);
+            } else if (!existing.isCompleted()
+                    && (existing.getApprovalStatus() == ApprovalStatus.PENDING
+                        || existing.getApprovalStatus() == ApprovalStatus.REJECTED)) {
+                existing.setApprovalStatus(ApprovalStatus.NOT_APPLICABLE);
+            }
+        }
 
         Todo saved = repo.save(existing);
         return TodoMapper.toResponse(saved);
@@ -145,6 +158,41 @@ public class TodoServiceImpl implements TodoService {
                 .stream()
                 .map(TodoMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public TodoResponse approve(Long id) {
+        AppUser manager = getCurrentUser();
+
+        Todo todo = repo.findByIdAndAssignedBy(id, manager)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı"));
+
+        if (todo.getApprovalStatus() != ApprovalStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu görev onay beklemiyor");
+        }
+
+        todo.setApprovalStatus(ApprovalStatus.APPROVED);
+
+        Todo saved = repo.save(todo);
+        return TodoMapper.toResponse(saved);
+    }
+
+    @Override
+    public TodoResponse reject(Long id, RejectTodoRequest request) {
+        AppUser manager = getCurrentUser();
+
+        Todo todo = repo.findByIdAndAssignedBy(id, manager)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı"));
+
+        if (todo.getApprovalStatus() != ApprovalStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu görev onay beklemiyor");
+        }
+
+        todo.setApprovalStatus(ApprovalStatus.REJECTED);
+        todo.setCompleted(false);
+
+        Todo saved = repo.save(todo);
+        return TodoMapper.toResponse(saved);
     }
 
     private AppUser getCurrentUser() {
