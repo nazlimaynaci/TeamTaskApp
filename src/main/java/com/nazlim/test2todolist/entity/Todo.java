@@ -32,6 +32,14 @@ public class Todo {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by_id", nullable = true)
+    private AppUser assignedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ApprovalStatus approvalStatus = ApprovalStatus.NOT_APPLICABLE;
+
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
         this.title = title;
@@ -91,5 +99,21 @@ public class Todo {
 
     public void setUser(AppUser user) {
         this.user = user;
+    }
+
+    public AppUser getAssignedBy() {
+        return assignedBy;
+    }
+
+    public void setAssignedBy(AppUser assignedBy) {
+        this.assignedBy = assignedBy;
+    }
+
+    public ApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(ApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
     }
 }

@@ -1,9 +1,12 @@
 package com.nazlim.test2todolist.services;
 
 import com.nazlim.test2todolist.auth.UserRepository;
+import com.nazlim.test2todolist.dto.AssignTodoRequest;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.entity.AppUser;
+import com.nazlim.test2todolist.entity.ApprovalStatus;
+import com.nazlim.test2todolist.entity.Role;
 import com.nazlim.test2todolist.entity.Todo;
 import com.nazlim.test2todolist.mapper.TodoMapper;
 import com.nazlim.test2todolist.repository.TodoRepository;
@@ -93,6 +96,57 @@ public class TodoServiceImpl implements TodoService {
                 .toList();
 
     }
+    @Override
+    public TodoResponse assignTodo(AssignTodoRequest request) {
+        AppUser manager = getCurrentUser();
+
+        AppUser assignee = userRepository.findById(request.assigneeId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
+
+        if (assignee.getRole() != Role.WORKER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görev sadece çalışanlara atanabilir");
+        }
+
+        Todo entity = new Todo();
+        entity.setTitle(request.title());
+        entity.setDescription(request.description());
+        entity.setDueDate(request.dueDate());
+        entity.setPriority(request.priority());
+        entity.setCompleted(false);
+        entity.setUser(assignee);
+        entity.setAssignedBy(manager);
+
+        Todo saved = repo.save(entity);
+        return TodoMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<TodoResponse> getAssignedByMe() {
+        AppUser manager = getCurrentUser();
+
+        return repo.findByAssignedBy(manager)
+                .stream()
+                .map(TodoMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<TodoResponse> getByApprovalStatus(String status) {
+        AppUser manager = getCurrentUser();
+
+        ApprovalStatus parsed;
+        try {
+            parsed = ApprovalStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Geçersiz onay durumu: " + status);
+        }
+
+        return repo.findByAssignedByAndApprovalStatus(manager, parsed)
+                .stream()
+                .map(TodoMapper::toResponse)
+                .toList();
+    }
+
     private AppUser getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

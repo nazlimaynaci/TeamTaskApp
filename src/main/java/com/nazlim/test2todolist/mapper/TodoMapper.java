@@ -17,13 +17,19 @@ public class TodoMapper {
     }
 
     public static TodoResponse toResponse(Todo todo) {
+        String assignedByUsername = todo.getAssignedBy() != null ? todo.getAssignedBy().getUsername() : null;
+        String assigneeUsername = todo.getUser() != null ? todo.getUser().getUsername() : null;
+
         return new TodoResponse(
                 todo.getId(),
                 todo.getTitle(),
                 todo.getDescription(),
                 todo.isCompleted(),
                 todo.getDueDate(),
-                todo.getPriority()
+                todo.getPriority(),
+                assignedByUsername,
+                assigneeUsername,
+                todo.getApprovalStatus().name()
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.nazlim.test2todolist.services;
 
+import com.nazlim.test2todolist.dto.AssignTodoRequest;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 
@@ -12,4 +13,7 @@ public interface TodoService {
     TodoResponse update(Long id, TodoRequest request);
     void delete(Long id);
     List<TodoResponse> getByStatus(boolean completed);
+    TodoResponse assignTodo(AssignTodoRequest request);
+    List<TodoResponse> getAssignedByMe();
+    List<TodoResponse> getByApprovalStatus(String status);
 }

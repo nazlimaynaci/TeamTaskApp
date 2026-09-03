@@ -1,10 +1,12 @@
 package com.nazlim.test2todolist.controllers;
 
+import com.nazlim.test2todolist.dto.AssignTodoRequest;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.services.TodoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,5 +50,24 @@ public class TodoController {
     @GetMapping("/status/{completed}")
     public List<TodoResponse> byStatus(@PathVariable boolean completed) {
         return service.getByStatus(completed);
+    }
+
+    @PostMapping("/assign")
+    @PreAuthorize("hasRole('MANAGER')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TodoResponse assign(@Valid @RequestBody AssignTodoRequest req) {
+        return service.assignTodo(req);
+    }
+
+    @GetMapping("/assigned-by-me")
+    @PreAuthorize("hasRole('MANAGER')")
+    public List<TodoResponse> assignedByMe() {
+        return service.getAssignedByMe();
+    }
+
+    @GetMapping("/approval-status/{status}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public List<TodoResponse> byApprovalStatus(@PathVariable String status) {
+        return service.getByApprovalStatus(status);
     }
 }
