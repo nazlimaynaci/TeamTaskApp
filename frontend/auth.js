@@ -95,7 +95,3 @@ function login() {
         })
         .catch(err => console.error(err));
 }
-
-function forgotPassword() {
-    alert("Şifremi unuttum özelliği yakında eklenecek. Şimdilik lütfen hesabını yönetenle iletişime geç.");
-}
