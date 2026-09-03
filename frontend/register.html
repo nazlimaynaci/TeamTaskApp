@@ -32,13 +32,57 @@
         </div>
 
         <div class="form-group">
+            <label>Ad Soyad</label>
+            <input type="text" id="fullName" placeholder="Adın ve soyadın">
+        </div>
+
+        <div class="form-group">
+            <label>E-posta</label>
+            <input type="email" id="email" placeholder="ornek@eposta.com">
+        </div>
+
+        <div class="form-group">
             <label>Kullanıcı Adı</label>
             <input type="text" id="username" placeholder="Kullanıcı adı oluştur">
         </div>
 
         <div class="form-group">
+            <label id="phoneLabel">Telefon (opsiyonel)</label>
+            <input type="text" id="phone" placeholder="05xx xxx xx xx">
+        </div>
+
+        <div id="managerFields" style="display:none">
+            <div class="form-group">
+                <label>Şirket / Departman</label>
+                <input type="text" id="company" placeholder="Şirket veya departman adı">
+            </div>
+
+            <div class="form-group">
+                <label>Pozisyon / Ünvan (opsiyonel)</label>
+                <input type="text" id="position" placeholder="Ör. Takım Lideri">
+            </div>
+
+            <div class="form-group">
+                <label>Davet Kodu</label>
+                <input type="text" id="inviteCode" placeholder="Şirketinden aldığın davet kodu">
+            </div>
+        </div>
+
+        <div class="form-group">
             <label>Şifre</label>
             <input type="password" id="password" placeholder="Şifre oluştur">
+        </div>
+
+        <div class="form-group">
+            <label>Şifre (Tekrar)</label>
+            <input type="password" id="confirmPassword" placeholder="Şifreni tekrar gir">
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="acceptedTerms">
+                Kullanım şartlarını kabul ediyorum
+            </label>
         </div>
 
         <button class="primary-btn full-btn" onclick="register()">Kayıt Ol</button>

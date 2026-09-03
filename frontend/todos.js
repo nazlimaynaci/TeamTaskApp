@@ -4,7 +4,7 @@ let currentId = null;
 let currentFilter = "all";
 
 window.onload = function () {
-    if (!localStorage.getItem("token")) {
+    if (!getToken()) {
         window.location.href = "login.html";
         return;
     }
@@ -12,8 +12,25 @@ window.onload = function () {
     getTodos();
 };
 
+// "Beni hatırla" işaretliyse token localStorage'da, değilse sessionStorage'da durur;
+// ikisine de bakıp hangisinde varsa onu kullanıyoruz.
+function getToken() {
+    return localStorage.getItem("token") || sessionStorage.getItem("token");
+}
+
+function getRole() {
+    return localStorage.getItem("role") || sessionStorage.getItem("role");
+}
+
+function clearAuth() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+}
+
 function showRoleBadge() {
-    const role = localStorage.getItem("role");
+    const role = getRole();
     const badge = document.getElementById("roleBadge");
     if (role === "MANAGER") {
         badge.textContent = "👔 Yönetici";
@@ -49,7 +66,7 @@ function addTodo() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
         },
         body: JSON.stringify({
             title: title,
@@ -76,7 +93,7 @@ function addTodo() {
 function getTodos() {
     fetch(`${BASE_URL}/api/todos`, {
         headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
         }
     })
         .then(res => {
@@ -173,7 +190,7 @@ function deleteTodo(id) {
     fetch(`${BASE_URL}/api/todos/delete/${id}`, {
         method: "DELETE",
         headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
         }
     })
         .then(() => getTodos());
@@ -184,7 +201,7 @@ function toggleStatus(todo) {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
         },
         body: JSON.stringify({
             ...todo,
@@ -210,7 +227,7 @@ function closeModal() {
 function saveUpdate() {
     fetch(`${BASE_URL}/api/todos`, {
         headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
         }
     })
         .then(res => res.json())
@@ -221,7 +238,7 @@ function saveUpdate() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                    Authorization: `Bearer ${getToken()}`
                 },
                 body: JSON.stringify({
                     ...currentTodo,
@@ -239,7 +256,6 @@ function saveUpdate() {
 }
 
 function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    clearAuth();
     window.location.href = "login.html";
 }

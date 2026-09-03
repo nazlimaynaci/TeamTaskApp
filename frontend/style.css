@@ -132,6 +132,20 @@ body {
     border-color: var(--primary);
 }
 
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text-soft);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 .auth-switch {
     text-align: center;
     margin-top: 18px;

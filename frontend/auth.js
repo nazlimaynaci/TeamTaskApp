@@ -5,12 +5,34 @@ function selectRole(role) {
     document.querySelectorAll(".filter-tab[data-role]").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.role === role);
     });
+
+    const isManager = role === "MANAGER";
+    document.getElementById("managerFields").style.display = isManager ? "block" : "none";
+    document.getElementById("phoneLabel").textContent = isManager ? "Telefon (zorunlu)" : "Telefon (opsiyonel)";
 }
 
 function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
     const role = document.getElementById("role").value;
+    const fullName = document.getElementById("fullName").value;
+    const email = document.getElementById("email").value;
+    const phone = document.getElementById("phone").value;
+    const company = document.getElementById("company").value;
+    const position = document.getElementById("position").value;
+    const inviteCode = document.getElementById("inviteCode").value;
+    const acceptedTerms = document.getElementById("acceptedTerms").checked;
+
+    if (password !== confirmPassword) {
+        alert("Şifreler eşleşmiyor.");
+        return;
+    }
+
+    if (!acceptedTerms) {
+        alert("Kullanım şartlarını kabul etmelisin.");
+        return;
+    }
 
     fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
@@ -20,7 +42,14 @@ function register() {
         body: JSON.stringify({
             username: username,
             password: password,
-            role: role
+            role: role,
+            fullName: fullName,
+            email: email,
+            phone: phone,
+            company: company,
+            position: position,
+            inviteCode: inviteCode,
+            acceptedTerms: acceptedTerms
         })
     })
         .then(res => res.json().then(data => ({ ok: res.ok, data })))
@@ -37,6 +66,7 @@ function register() {
 function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    const rememberMe = document.getElementById("rememberMe").checked;
 
     fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
@@ -55,11 +85,17 @@ function login() {
                 return;
             }
 
-            // TOKEN VE ROL KAYDET
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("role", data.role);
+            // "Beni hatırla" işaretliyse tarayıcı kapansa da token kalıcı olsun diye localStorage,
+            // değilse sekme/tarayıcı kapanınca silinsin diye sessionStorage kullanılır.
+            const storage = rememberMe ? localStorage : sessionStorage;
+            storage.setItem("token", data.token);
+            storage.setItem("role", data.role);
 
             window.location.href = "todos.html";
         })
         .catch(err => console.error(err));
+}
+
+function forgotPassword() {
+    alert("Şifremi unuttum özelliği yakında eklenecek. Şimdilik lütfen hesabını yönetenle iletişime geç.");
 }
