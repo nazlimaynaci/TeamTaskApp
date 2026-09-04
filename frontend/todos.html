@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App</title>
+    <title>Task Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 </head>
 <body>
 
@@ -21,38 +25,90 @@
         </div>
 
         <div class="hero-content">
-            <h1>Yapılacaklar 🍂</h1>
+            <h1>Task Manager 📋</h1>
             <p>Görevlerini düzenli ve şık bir şekilde yönet</p>
+            <div id="profileInfo" class="team-info" style="display:none"></div>
+            <div id="teamInfo" class="team-info" style="display:none"></div>
         </div>
     </header>
 
     <main class="content-area">
 
-        <section id="managerAssignPanel" class="task-panel" style="display:none">
-            <div class="section-head">
-                <h2>👔 Görev Ata</h2>
-            </div>
-            <div class="task-row">
-                <select id="assigneeSelect" class="soft-input flex-grow"></select>
-                <input type="text" id="assignTitle" class="soft-input flex-grow" placeholder="🌸 Görev başlığı">
-                <input type="text" id="assignDescription" class="soft-input flex-grow" placeholder="📝 Açıklama">
-                <input type="date" id="assignDueDate" class="soft-input small-input">
-                <select id="assignPriority" class="soft-input small-input">
-                    <option value="low">Düşük</option>
-                    <option value="medium">Orta</option>
-                    <option value="high">Yüksek</option>
-                </select>
-                <button class="add-btn" onclick="assignTodo()">Ata</button>
-            </div>
-        </section>
+        <div id="managerTabs" class="tab-bar" style="display:none">
+            <button class="tab-btn active" data-tab="tasks" onclick="setManagerTab('tasks')">📋 Görevler</button>
+            <button class="tab-btn" data-tab="workload" onclick="setManagerTab('workload')">📊 İş Yükü</button>
+            <button class="tab-btn" data-tab="teams" onclick="setManagerTab('teams')">🧑‍🤝‍🧑 Ekiplerim</button>
+            <button class="tab-btn" data-tab="invites" onclick="setManagerTab('invites')">🎟️ Davet Kodları</button>
+        </div>
 
-        <section id="assignedByMeSection" class="todo-section" style="display:none">
-            <div class="section-head">
-                <h2>📋 Atadıklarım</h2>
-                <button class="secondary-btn" onclick="deleteCompletedAssigned()">🗑️ Tamamlananları Sil</button>
-            </div>
-            <div id="assignedByMeList" class="todo-list"></div>
-        </section>
+        <div id="tabGroup-tasks" class="tab-group">
+            <section id="managerAssignPanel" class="task-panel" style="display:none">
+                <div class="section-head">
+                    <h2>👔 Görev Ata</h2>
+                </div>
+                <div class="task-row">
+                    <select id="assigneeSelect" class="soft-input flex-grow"></select>
+                    <input type="text" id="assignTitle" class="soft-input flex-grow" placeholder="🌸 Görev başlığı">
+                    <input type="text" id="assignDescription" class="soft-input flex-grow" placeholder="📝 Açıklama">
+                    <input type="date" id="assignDueDate" class="soft-input small-input">
+                    <select id="assignPriority" class="soft-input small-input">
+                        <option value="low">Düşük</option>
+                        <option value="medium">Orta</option>
+                        <option value="high">Yüksek</option>
+                    </select>
+                    <button class="primary-btn" onclick="assignTodo()">Ata</button>
+                </div>
+            </section>
+
+            <section id="assignedByMeSection" class="todo-section" style="display:none">
+                <div class="section-head">
+                    <h2>📋 Atadıklarım</h2>
+                    <button class="secondary-btn" onclick="deleteCompletedAssigned()">🗑️ Tamamlananları Sil</button>
+                </div>
+
+                <div id="assignedViewToggle" class="filter-tabs view-toggle">
+                    <button class="filter-tab active" data-view="list" onclick="setAssignedView('list')">📋 Liste</button>
+                    <button class="filter-tab" data-view="calendar" onclick="setAssignedView('calendar')">🗓️ Takvim</button>
+                </div>
+
+                <div id="assignedByMeList" class="todo-list"></div>
+                <div id="assignedCalendar" style="display:none"></div>
+            </section>
+        </div>
+
+        <div id="tabGroup-workload" class="tab-group" style="display:none">
+            <section id="workloadPanel" class="task-panel" style="display:none">
+                <div class="section-head">
+                    <h2>📊 Ekip İş Yükü</h2>
+                </div>
+                <div id="workloadList" class="todo-list"></div>
+            </section>
+        </div>
+
+        <div id="tabGroup-teams" class="tab-group" style="display:none">
+            <section id="teamsPanel" class="task-panel" style="display:none">
+                <div class="section-head">
+                    <h2>🧑‍🤝‍🧑 Ekiplerim</h2>
+                </div>
+                <div class="task-row">
+                    <input type="text" id="newTeamName" class="soft-input flex-grow" placeholder="Yeni ekip adı">
+                    <button class="primary-btn" onclick="createTeam()">Ekip Oluştur</button>
+                </div>
+                <div id="teamsList" class="todo-list"></div>
+            </section>
+        </div>
+
+        <div id="tabGroup-invites" class="tab-group" style="display:none">
+            <section id="inviteCodesPanel" class="task-panel" style="display:none">
+                <div class="section-head">
+                    <h2>🎟️ Yönetici Davet Kodları</h2>
+                </div>
+                <div class="task-row">
+                    <button class="primary-btn" onclick="generateInviteCode()">+ Yeni Kod Üret</button>
+                </div>
+                <div id="inviteCodesList" class="todo-list"></div>
+            </section>
+        </div>
 
         <section id="personalTaskPanel" class="task-panel">
             <div class="task-row">
@@ -81,7 +137,13 @@
                 <button class="filter-tab" data-filter="completed" onclick="setFilter('completed')">Tamamlanan</button>
             </div>
 
+            <div id="personalViewToggle" class="filter-tabs view-toggle">
+                <button class="filter-tab active" data-view="list" onclick="setPersonalView('list')">📋 Liste</button>
+                <button class="filter-tab" data-view="calendar" onclick="setPersonalView('calendar')">🗓️ Takvim</button>
+            </div>
+
             <div id="todoList" class="todo-list"></div>
+            <div id="personalCalendar" style="display:none"></div>
         </section>
 
     </main>
@@ -104,6 +166,28 @@
         <div class="modal-actions">
             <button class="primary-btn" onclick="saveUpdate()">Kaydet</button>
             <button class="secondary-btn" onclick="closeModal()">İptal</button>
+        </div>
+    </div>
+</div>
+
+<div id="logModal" class="modal">
+    <div class="modal-content custom-modal">
+        <h3>📝 Görev Süreci</h3>
+
+        <div id="logList" class="todo-list"></div>
+
+        <div id="logNoteForm">
+            <textarea id="noteContent" class="soft-input" placeholder="Ne yaptığını not al..." rows="3"></textarea>
+            <button class="primary-btn full-btn" onclick="addNote()">Not Ekle</button>
+
+            <h4>🔁 Görevi Devret</h4>
+            <select id="handoffAssignee" class="soft-input"></select>
+            <input type="text" id="handoffMessage" class="soft-input" placeholder="Devir notu (opsiyonel)">
+            <button class="secondary-btn full-btn" onclick="handoffTodo()">Devret</button>
+        </div>
+
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="closeLogModal()">Kapat</button>
         </div>
     </div>
 </div>

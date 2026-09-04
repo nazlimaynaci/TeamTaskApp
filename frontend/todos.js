@@ -1,7 +1,12 @@
 const BASE_URL = "http://localhost:8080";
 
-let currentId = null;
 let currentFilter = "all";
+
+// Görev listesi/takvim geçişi için: hangi bölüm hangi görünüm modunda,
+// ve o bölümde şu an render edilmiş bir FullCalendar örneği var mı (varsa toggle'da yeniden çizmeden önce yok edilir).
+let personalViewMode = "list";
+let assignedViewMode = "list";
+const calendarInstances = {};
 
 window.onload = function () {
     if (!getToken()) {
@@ -9,16 +14,25 @@ window.onload = function () {
         return;
     }
     showRoleBadge();
+    preventPastDueDates();
+    loadMyProfile();
 
     if (getRole() === "MANAGER") {
+        document.getElementById("managerTabs").style.display = "flex";
+        document.getElementById("workloadPanel").style.display = "block";
+        document.getElementById("teamsPanel").style.display = "block";
+        document.getElementById("inviteCodesPanel").style.display = "block";
         document.getElementById("managerAssignPanel").style.display = "block";
         document.getElementById("assignedByMeSection").style.display = "block";
         document.getElementById("personalTaskPanel").style.display = "none";
         document.getElementById("personalTodoSection").style.display = "none";
-        loadWorkers();
+        loadWorkload();
+        loadTeams();
+        loadInviteCodes();
         loadAssignedByMe();
     } else {
         getTodos();
+        loadMyTeam();
     }
 
     loadNotifications();
@@ -42,6 +56,24 @@ function clearAuth() {
     sessionStorage.removeItem("role");
 }
 
+// Token'lı her istek buradan geçer. Token süresi dolduğunda (1 saat, JwtService.java)
+// backend 401 ile birlikte bir hata nesnesi döner (dizi değil) - eskiden bunu fark etmeyen
+// kodlar (.filter/.map çağrıları) sessizce patlıyordu ve butonlar "hiçbir şey yapmıyormuş" gibi
+// görünüyordu. Artık 401 görülür görülmez kullanıcı login sayfasına yönlendiriliyor.
+function authFetch(url, options = {}) {
+    const headers = { ...(options.headers || {}), Authorization: `Bearer ${getToken()}` };
+
+    return fetch(url, { ...options, headers }).then(res => {
+        if (res.status === 401) {
+            clearAuth();
+            alert("Oturumun sona ermiş, tekrar giriş yapman gerekiyor.");
+            window.location.href = "login.html";
+            throw new Error("Unauthorized");
+        }
+        return res;
+    });
+}
+
 function showRoleBadge() {
     const role = getRole();
     const badge = document.getElementById("roleBadge");
@@ -52,6 +84,69 @@ function showRoleBadge() {
         badge.textContent = "🧑‍💻 Çalışan";
         badge.className = "priority-badge priority-low";
     }
+}
+
+// Giriş yapan kişinin adını ve (varsa) şirket/departman bilgisini hero'da gösterir.
+// Yöneticide company kayıt sırasında zorunlu girildiği için hep dolu; çalışan için
+// zaten ekip adı ayrıca #teamInfo ile gösteriliyor.
+function loadMyProfile() {
+    authFetch(`${BASE_URL}/api/users/me`)
+        .then(res => res.json())
+        .then(data => {
+            const el = document.getElementById("profileInfo");
+            let text = `👤 ${data.fullName}`;
+            if (data.company) {
+                text += ` · 🏢 ${data.company}`;
+            }
+            el.textContent = text;
+            el.style.display = "inline-block";
+        })
+        .catch(err => console.error(err));
+}
+
+// Sadece çalışan rolündeki kullanıcı için: hangi ekipte olduğunu ve
+// o ekibin yöneticisini gösterir. Henüz bir ekibe eklenmediyse (204) kutuyu gizler.
+function loadMyTeam() {
+    authFetch(`${BASE_URL}/api/teams/my-team`)
+        .then(res => {
+            if (res.status === 204) return null;
+            if (!res.ok) throw new Error("Ekip bilgisi alınamadı");
+            return res.json();
+        })
+        .then(data => {
+            const el = document.getElementById("teamInfo");
+            if (!data) {
+                el.style.display = "none";
+                return;
+            }
+            el.textContent = `🧑‍🤝‍🧑 ${data.teamName} — 👔 Yönetici: ${data.managerFullName}`;
+            el.style.display = "inline-block";
+        })
+        .catch(err => console.error(err));
+}
+
+// Tarih seçicilerin takviminden geçmiş bir güne tıklanamasın diye "min" değeri
+// bugüne sabitleniyor. Backend zaten @FutureOrPresent ile bunu kesin olarak reddediyor,
+// bu sadece kullanıcı geçmiş bir günü seçmeye çalışmadan önce engelleyen bir UX iyileştirmesi.
+function preventPastDueDates() {
+    const today = new Date().toISOString().split("T")[0];
+    ["dueDate", "assignDueDate", "editDueDate"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.min = today;
+    });
+}
+
+// Yönetici ekranındaki panelleri (Görevler/İş Yükü/Ekiplerim/Davet Kodları) sekme
+// gibi gösterir - hepsi alt alta değil, seçilen sekmenin içeriği görünür, diğerleri gizlenir.
+function setManagerTab(tab) {
+    document.querySelectorAll(".tab-group").forEach(group => {
+        group.style.display = "none";
+    });
+    document.getElementById(`tabGroup-${tab}`).style.display = "block";
+
+    document.querySelectorAll("#managerTabs .tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+    });
 }
 
 function setFilter(filter) {
@@ -75,12 +170,9 @@ function addTodo() {
         return;
     }
 
-    fetch(`${BASE_URL}/api/todos`, {
+    authFetch(`${BASE_URL}/api/todos`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             title: title,
             description: description,
@@ -90,11 +182,11 @@ function addTodo() {
     })
         .then(res => {
             if (!res.ok) {
-                throw new Error("Görev eklenemedi");
+                return res.json().then(err => { throw new Error(err.message || "Görev eklenemedi"); });
             }
             return res.json ? res.json() : null;
         })
-        .catch(() => null)
+        .catch(err => alert(err.message))
         .finally(() => {
             document.getElementById("title").value = "";
             document.getElementById("description").value = "";
@@ -104,11 +196,7 @@ function addTodo() {
 }
 
 function getTodos() {
-    fetch(`${BASE_URL}/api/todos`, {
-        headers: {
-            Authorization: `Bearer ${getToken()}`
-        }
-    })
+    authFetch(`${BASE_URL}/api/todos`)
         .then(res => {
             if (!res.ok) {
                 throw new Error("Görevler alınamadı");
@@ -124,44 +212,58 @@ function getTodos() {
                 return true;
             });
 
-            const list = document.getElementById("todoList");
-            list.innerHTML = "";
-
-            visible.forEach(todo => {
-                list.innerHTML += `
-                <div class="todo-card">
-                    <div class="todo-left">
-                        <input type="checkbox"
-                            ${todo.completed ? "checked" : ""}
-                            onchange='toggleStatus(${JSON.stringify(todo)})' />
-
-                        <div class="todo-content">
-                            <div class="todo-title ${todo.completed ? "completed" : ""}">
-                                ${todo.title || ""}
-                            </div>
-
-                            <div class="todo-desc ${todo.completed ? "completed" : ""}">
-                                ${todo.description || ""}
-                            </div>
-
-                            ${dueDateBadge(todo)}
-                            ${priorityBadge(todo)}
-                            ${assignedByBadge(todo)}
-                            ${todo.assignedByUsername ? `<div class="todo-meta">${approvalStatusBadge(todo)}</div>` : ""}
-                        </div>
-                    </div>
-
-                    <div class="todo-actions">
-                        <button class="icon-btn" onclick='openModal(${JSON.stringify(todo)})'>✏️</button>
-                        <button class="icon-btn" onclick="deleteTodo(${todo.id})">❌</button>
-                    </div>
-                </div>
-                `;
-            });
+            if (personalViewMode === "calendar") {
+                renderPersonalCalendar(visible);
+            } else {
+                renderPersonalList(visible);
+            }
         })
         .catch(err => {
             console.error(err);
         });
+}
+
+function renderPersonalList(visible) {
+    const list = document.getElementById("todoList");
+    list.innerHTML = "";
+
+    visible.forEach(todo => {
+        list.innerHTML += `
+        <div class="todo-card">
+            <div class="todo-left">
+                <input type="checkbox"
+                    ${todo.completed ? "checked" : ""}
+                    onchange='toggleStatus(${JSON.stringify(todo)})' />
+
+                <div class="todo-content">
+                    <div class="todo-title ${todo.completed ? "completed" : ""}">
+                        ${todo.title || ""}
+                    </div>
+
+                    <div class="todo-desc ${todo.completed ? "completed" : ""}">
+                        ${todo.description || ""}
+                    </div>
+
+                    ${dueDateBadge(todo)}
+                    ${priorityBadge(todo)}
+                    ${assignedByBadge(todo)}
+                    ${todo.assignedByUsername ? `<div class="todo-meta">${approvalStatusBadge(todo)}</div>` : ""}
+                </div>
+            </div>
+
+            <div class="todo-actions">
+                ${todo.assignedByUsername ? `<button class="icon-btn" onclick='openLogModal(${JSON.stringify(todo)}, true)'>📝</button>` : ""}
+                <button class="icon-btn" onclick="deleteTodo(${todo.id})">❌</button>
+            </div>
+        </div>
+        `;
+    });
+}
+
+function renderPersonalCalendar(todos) {
+    renderTodoCalendar("personalCalendar", todos, todo => {
+        if (todo.assignedByUsername) openLogModal(todo, true);
+    });
 }
 
 function dueDateBadge(todo) {
@@ -220,18 +322,244 @@ function approvalStatusBadge(todo) {
     return `<span class="priority-badge ${info.cls}">${info.text}${reasonText}</span>`;
 }
 
-function loadWorkers() {
-    fetch(`${BASE_URL}/api/users/workers`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+// Her ekipte kimde kaç açık (yönetici tarafından atanmış) görev var, kimde kaç tanesi
+// onay bekliyor - yöneticinin ekrana girer girmez ekibin durumunu görmesi için.
+function loadWorkload() {
+    authFetch(`${BASE_URL}/api/teams/mine/workload`)
+        .then(res => res.json())
+        .then(data => renderWorkload(data))
+        .catch(err => console.error(err));
+}
+
+function renderWorkload(teamsData) {
+    const container = document.getElementById("workloadList");
+    container.innerHTML = "";
+
+    if (teamsData.length === 0) {
+        container.innerHTML = "<p>Henüz ekip oluşturmadın.</p>";
+        return;
+    }
+
+    teamsData.forEach(team => {
+        const rows = team.members.length
+            ? team.members.map(m => `
+                <div class="todo-meta">
+                    <span class="priority-badge status-progress">🧑‍💻 ${m.fullName}</span>
+                    <span class="priority-badge priority-medium">${m.openTaskCount} açık görev</span>
+                    ${m.pendingApprovalCount > 0 ? `<span class="priority-badge status-pending">${m.pendingApprovalCount} onay bekliyor</span>` : ""}
+                </div>
+            `).join("")
+            : "<p>Bu ekipte henüz üye yok.</p>";
+
+        container.innerHTML += `
+            <div class="todo-card team-card">
+                <div class="todo-content">
+                    <div class="todo-title">${team.teamName}</div>
+                    ${rows}
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Yöneticinin daha önce ürettiği davet kodlarını (kullanılmış/kullanılmamış) listeler.
+function loadInviteCodes() {
+    authFetch(`${BASE_URL}/api/invite-codes/mine`)
+        .then(res => res.json())
+        .then(data => renderInviteCodes(data))
+        .catch(err => console.error(err));
+}
+
+function renderInviteCodes(codes) {
+    const container = document.getElementById("inviteCodesList");
+    container.innerHTML = "";
+
+    if (codes.length === 0) {
+        container.innerHTML = "<p>Henüz kod üretmedin.</p>";
+        return;
+    }
+
+    codes.forEach(c => {
+        const date = new Date(c.createdAt).toLocaleString("tr-TR");
+        const statusBadge = c.used
+            ? `<span class="priority-badge status-approved">✅ Kullanıldı${c.usedByFullName ? ": " + c.usedByFullName : ""}</span>`
+            : `<span class="priority-badge status-progress">Kullanılmadı</span>`;
+
+        container.innerHTML += `
+            <div class="todo-card">
+                <div class="todo-content">
+                    <div class="todo-title" style="font-family:monospace">${c.code}</div>
+                    <div class="todo-meta">
+                        ${statusBadge}
+                        <span class="todo-date">${date}</span>
+                    </div>
+                </div>
+                ${!c.used ? `<button class="icon-btn" onclick="copyInviteCode('${c.code}')">📋</button>` : ""}
+            </div>
+        `;
+    });
+}
+
+// Tek kullanımlık, rastgele bir davet kodu üretir - sabit .env kodunun aksine
+// her seferinde farklıdır ve bir kere kullanılınca bir daha işe yaramaz.
+function generateInviteCode() {
+    authFetch(`${BASE_URL}/api/invite-codes`, { method: "POST" })
+        .then(res => {
+            if (!res.ok) throw new Error("Kod üretilemedi");
+            return res.json();
+        })
+        .then(data => {
+            alert(`Yeni davet kodu: ${data.code}\n\nBu kodu yeni yöneticiyle paylaş - sadece bir kere kullanılabilir.`);
+        })
+        .catch(err => alert(err.message))
+        .finally(loadInviteCodes);
+}
+
+function copyInviteCode(code) {
+    navigator.clipboard.writeText(code)
+        .then(() => alert("Kod kopyalandı: " + code))
+        .catch(() => alert(code));
+}
+
+// Yöneticinin ekiplerini sunucudan çeker; hem "Ekiplerim" panelini
+// hem de görev atama ekranındaki (ekibe göre gruplu) çalışan listesini bu veriyle doldurur.
+function loadTeams() {
+    authFetch(`${BASE_URL}/api/teams/mine`)
         .then(res => res.json())
         .then(data => {
-            const select = document.getElementById("assigneeSelect");
-            select.innerHTML = data
-                .map(w => `<option value="${w.id}">${w.fullName} (${w.username})</option>`)
-                .join("");
+            renderTeamsPanel(data);
+            renderAssigneeSelect(data);
         })
         .catch(err => console.error(err));
+}
+
+function renderTeamsPanel(teamsData) {
+    const container = document.getElementById("teamsList");
+    container.innerHTML = "";
+
+    if (teamsData.length === 0) {
+        container.innerHTML = "<p>Henüz ekip oluşturmadın.</p>";
+    }
+
+    teamsData.forEach(team => {
+        const membersHtml = team.members.length
+            ? team.members.map(m => `
+                <span class="member-chip">
+                    🧑‍💻 ${m.fullName}
+                    <button class="chip-remove" onclick="removeTeamMember(${team.id}, ${m.id})">❌</button>
+                </span>
+            `).join("")
+            : "<span>Henüz üye yok</span>";
+
+        container.innerHTML += `
+            <div class="todo-card team-card">
+                <div class="todo-content">
+                    <div class="todo-title">${team.name}</div>
+                    <div class="todo-meta">${membersHtml}</div>
+                    <div class="task-row">
+                        <select id="unassignedSelect-${team.id}" class="soft-input flex-grow"></select>
+                        <button class="primary-btn" onclick="addTeamMember(${team.id})">+ Ekle</button>
+                        <button class="secondary-btn" onclick="deleteTeam(${team.id})">🗑️ Ekibi Sil</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    fillUnassignedSelects(teamsData);
+}
+
+// Her ekip kartındaki "ekle" dropdown'ını, henüz hiçbir ekipte olmayan
+// çalışanlarla doldurur (aynı çalışan listesi tüm kartlarda tekrar kullanılır).
+function fillUnassignedSelects(teamsData) {
+    authFetch(`${BASE_URL}/api/users/workers/unassigned`)
+        .then(res => res.json())
+        .then(workers => {
+            teamsData.forEach(team => {
+                const select = document.getElementById(`unassignedSelect-${team.id}`);
+                if (!select) return;
+                select.innerHTML = workers.length
+                    ? workers.map(w => `<option value="${w.id}">${w.fullName} (${w.username})</option>`).join("")
+                    : `<option value="">Ekipsiz çalışan yok</option>`;
+            });
+        })
+        .catch(err => console.error(err));
+}
+
+// Görev atama panelindeki select'i ekiplere göre grupluyor (optgroup),
+// böylece yönetici görevi hangi ekipten kime atacağını görerek seçiyor.
+function renderAssigneeSelect(teamsData) {
+    const select = document.getElementById("assigneeSelect");
+    const groups = teamsData
+        .filter(team => team.members.length > 0)
+        .map(team => `
+            <optgroup label="${team.name}">
+                ${team.members.map(m => `<option value="${m.id}">${m.fullName} (${m.username})</option>`).join("")}
+            </optgroup>
+        `).join("");
+
+    select.innerHTML = groups || `<option value="">Önce ekip oluşturup üye ekle</option>`;
+}
+
+function createTeam() {
+    const name = document.getElementById("newTeamName").value.trim();
+    if (!name) {
+        alert("Ekip adı boş olamaz.");
+        return;
+    }
+
+    authFetch(`${BASE_URL}/api/teams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Ekip oluşturulamadı");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            document.getElementById("newTeamName").value = "";
+            loadTeams();
+        });
+}
+
+function addTeamMember(teamId) {
+    const select = document.getElementById(`unassignedSelect-${teamId}`);
+    const workerId = select.value;
+    if (!workerId) {
+        alert("Eklenecek çalışan bulunamadı.");
+        return;
+    }
+
+    authFetch(`${BASE_URL}/api/teams/${teamId}/members/${workerId}`, { method: "PUT" })
+        .then(res => {
+            if (!res.ok) throw new Error("Çalışan eklenemedi");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(loadTeams);
+}
+
+function removeTeamMember(teamId, workerId) {
+    authFetch(`${BASE_URL}/api/teams/${teamId}/members/${workerId}`, { method: "DELETE" })
+        .then(res => {
+            if (!res.ok) throw new Error("Çalışan çıkarılamadı");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(loadTeams);
+}
+
+function deleteTeam(teamId) {
+    if (!confirm("Bu ekibi silmek istediğine emin misin? Üyeler ekipsiz kalacak.")) return;
+
+    authFetch(`${BASE_URL}/api/teams/${teamId}`, { method: "DELETE" })
+        .then(res => {
+            if (!res.ok) throw new Error("Ekip silinemedi");
+        })
+        .catch(err => alert(err.message))
+        .finally(loadTeams);
 }
 
 function assignTodo() {
@@ -250,12 +578,9 @@ function assignTodo() {
         return;
     }
 
-    fetch(`${BASE_URL}/api/todos/assign`, {
+    authFetch(`${BASE_URL}/api/todos/assign`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             title: title,
             description: description,
@@ -265,7 +590,7 @@ function assignTodo() {
         })
     })
         .then(res => {
-            if (!res.ok) throw new Error("Görev atanamadı");
+            if (!res.ok) return res.json().then(err => { throw new Error(err.message || "Görev atanamadı"); });
             return res.json();
         })
         .catch(err => alert(err.message))
@@ -278,51 +603,123 @@ function assignTodo() {
 }
 
 function loadAssignedByMe() {
-    fetch(`${BASE_URL}/api/todos/assigned-by-me`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(`${BASE_URL}/api/todos/assigned-by-me`)
         .then(res => res.json())
         .then(data => {
-            const list = document.getElementById("assignedByMeList");
-            list.innerHTML = "";
-
-            data.forEach(todo => {
-                list.innerHTML += `
-                <div class="todo-card">
-                    <div class="todo-left">
-                        <div class="todo-content">
-                            <div class="todo-title ${todo.completed ? "completed" : ""}">
-                                ${todo.title || ""}
-                            </div>
-                            <div class="todo-desc">${todo.description || ""}</div>
-
-                            <div class="todo-meta">
-                                <span class="priority-badge status-progress">🧑‍💻 ${todo.assigneeUsername}</span>
-                            </div>
-                            ${dueDateBadge(todo)}
-                            ${priorityBadge(todo)}
-                            <div class="todo-meta">${approvalStatusBadge(todo)}</div>
-                        </div>
-                    </div>
-
-                    ${todo.approvalStatus === "PENDING" ? `
-                    <div class="todo-actions">
-                        <button class="icon-btn" onclick="approveTodo(${todo.id})">✅</button>
-                        <button class="icon-btn" onclick="rejectTodo(${todo.id})">❌</button>
-                    </div>
-                    ` : ""}
-                </div>
-                `;
-            });
+            if (assignedViewMode === "calendar") {
+                renderAssignedCalendar(data);
+            } else {
+                renderAssignedList(data);
+            }
         })
         .catch(err => console.error(err));
 }
 
+function renderAssignedList(data) {
+    const list = document.getElementById("assignedByMeList");
+    list.innerHTML = "";
+
+    data.forEach(todo => {
+        list.innerHTML += `
+        <div class="todo-card">
+            <div class="todo-left">
+                <div class="todo-content">
+                    <div class="todo-title ${todo.completed ? "completed" : ""}">
+                        ${todo.title || ""}
+                    </div>
+                    <div class="todo-desc">${todo.description || ""}</div>
+
+                    <div class="todo-meta">
+                        <span class="priority-badge status-progress">🧑‍💻 ${todo.assigneeUsername}</span>
+                    </div>
+                    ${dueDateBadge(todo)}
+                    ${priorityBadge(todo)}
+                    <div class="todo-meta">${approvalStatusBadge(todo)}</div>
+                </div>
+            </div>
+
+            <div class="todo-actions">
+                <button class="icon-btn" onclick='openModal(${JSON.stringify(todo)})'>✏️</button>
+                <button class="icon-btn" onclick='openLogModal(${JSON.stringify(todo)}, false)'>📝</button>
+                ${todo.approvalStatus === "PENDING" ? `
+                <button class="icon-btn" onclick="approveTodo(${todo.id})">✅</button>
+                <button class="icon-btn" onclick="rejectTodo(${todo.id})">❌</button>
+                ` : ""}
+            </div>
+        </div>
+        `;
+    });
+}
+
+function renderAssignedCalendar(todos) {
+    renderTodoCalendar("assignedCalendar", todos, todo => openLogModal(todo, false));
+}
+
+// Hem kişisel liste hem de "Atadıklarım" listesi tarafından paylaşılan takvim çizici.
+// Son teslim tarihi olan her görevi ayın ilgili gününe bir etiket olarak koyar;
+// bir önceki FullCalendar örneği varsa (aynı konteynerde) önce yok edilir, yoksa aya geçişlerde üst üste birikirdi.
+function renderTodoCalendar(containerId, todos, onEventClick) {
+    if (calendarInstances[containerId]) {
+        calendarInstances[containerId].destroy();
+    }
+
+    const events = todos
+        .filter(t => t.dueDate)
+        .map(t => ({
+            id: String(t.id),
+            title: t.title,
+            start: t.dueDate,
+            allDay: true,
+            classNames: [
+                `fc-priority-${t.priority || "none"}`,
+                t.completed ? "fc-completed" : ""
+            ]
+        }));
+
+    const calendar = new FullCalendar.Calendar(document.getElementById(containerId), {
+        initialView: "dayGridMonth",
+        locale: "tr",
+        height: "auto",
+        headerToolbar: { left: "prev,next today", center: "title", right: "" },
+        events: events,
+        eventClick: function (info) {
+            const todo = todos.find(t => String(t.id) === info.event.id);
+            if (todo) onEventClick(todo);
+        }
+    });
+
+    calendar.render();
+    calendarInstances[containerId] = calendar;
+}
+
+function setPersonalView(mode) {
+    personalViewMode = mode;
+
+    document.getElementById("todoList").style.display = mode === "list" ? "flex" : "none";
+    document.getElementById("personalCalendar").style.display = mode === "calendar" ? "block" : "none";
+
+    document.querySelectorAll("#personalViewToggle .filter-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === mode);
+    });
+
+    getTodos();
+}
+
+function setAssignedView(mode) {
+    assignedViewMode = mode;
+
+    document.getElementById("assignedByMeList").style.display = mode === "list" ? "flex" : "none";
+    document.getElementById("assignedCalendar").style.display = mode === "calendar" ? "block" : "none";
+
+    document.querySelectorAll("#assignedViewToggle .filter-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === mode);
+    });
+
+    loadAssignedByMe();
+}
+
 function approveTodo(id) {
-    fetch(`${BASE_URL}/api/todos/approve/${id}`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(`${BASE_URL}/api/todos/approve/${id}`, { method: "PUT" })
         .then(res => {
             if (!res.ok) throw new Error("Onaylanamadı");
             return res.json();
@@ -334,12 +731,9 @@ function approveTodo(id) {
 function rejectTodo(id) {
     const reason = prompt("Red sebebi (opsiyonel):");
 
-    fetch(`${BASE_URL}/api/todos/reject/${id}`, {
+    authFetch(`${BASE_URL}/api/todos/reject/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: reason || null })
     })
         .then(res => {
@@ -351,9 +745,7 @@ function rejectTodo(id) {
 }
 
 function loadNotifications() {
-    fetch(`${BASE_URL}/api/notifications`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(`${BASE_URL}/api/notifications`)
         .then(res => res.json())
         .then(data => {
             const unreadCount = data.filter(n => !n.read).length;
@@ -399,18 +791,12 @@ function closeNotifications() {
 }
 
 function markNotificationRead(id) {
-    fetch(`${BASE_URL}/api/notifications/read/${id}`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(`${BASE_URL}/api/notifications/read/${id}`, { method: "PUT" })
         .then(() => loadNotifications());
 }
 
 function markAllNotificationsRead() {
-    fetch(`${BASE_URL}/api/notifications/read-all`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(`${BASE_URL}/api/notifications/read-all`, { method: "PUT" })
         .then(() => loadNotifications());
 }
 
@@ -421,41 +807,55 @@ function updateCounter(todos) {
 }
 
 function deleteTodo(id) {
-    fetch(`${BASE_URL}/api/todos/delete/${id}`, {
-        method: "DELETE",
-        headers: {
-            Authorization: `Bearer ${getToken()}`
-        }
-    })
+    authFetch(`${BASE_URL}/api/todos/delete/${id}`, { method: "DELETE" })
         .then(() => getTodos());
 }
 
 // Bir listedeki tamamlanmış (ama hala onay bekleyen değil) görevleri toplu siler.
 // fetchUrl: hangi listeden okunacağı, reloadFn: silme bitince ekranı yenileyecek fonksiyon.
 function deleteCompleted(fetchUrl, reloadFn) {
-    fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    authFetch(fetchUrl)
         .then(res => res.json())
         .then(data => {
-            const ids = data
-                .filter(t => t.completed && t.approvalStatus !== "PENDING")
-                .map(t => t.id);
+            const completed = data.filter(t => t.completed);
+            const deletable = completed.filter(t => t.approvalStatus !== "PENDING");
+            const pendingCount = completed.length - deletable.length;
 
-            if (ids.length === 0) {
-                alert("Silinecek tamamlanmış görev yok.");
+            if (deletable.length === 0) {
+                if (pendingCount > 0) {
+                    alert(`${pendingCount} görev tamamlandı ama hâlâ onay bekliyor - onaylanmadan silinemez.`);
+                } else {
+                    alert("Silinecek tamamlanmış görev yok.");
+                }
                 return;
             }
-            if (!confirm(`${ids.length} tamamlanmış görev silinecek, emin misin?`)) {
+
+            // Sadece bir sayı değil, tam olarak hangi görevlerin (ve kime ait olduğunun)
+            // silineceğini önceden gösteriyoruz ki "sil dedim başka şeyler gitti" sürprizi yaşanmasın.
+            const preview = deletable.map(t => `• ${t.title} (${t.assigneeUsername})`).join("\n");
+            const pendingNote = pendingCount > 0
+                ? `\n\n(Ayrıca ${pendingCount} görev onay beklediği için bu listeye dahil edilmedi.)`
+                : "";
+
+            if (!confirm(`${deletable.length} tamamlanmış görev silinecek:\n\n${preview}${pendingNote}\n\nEmin misin?`)) {
                 return;
             }
 
             return Promise.all(
-                ids.map(id => fetch(`${BASE_URL}/api/todos/delete/${id}`, {
-                    method: "DELETE",
-                    headers: { Authorization: `Bearer ${getToken()}` }
-                }))
-            ).then(reloadFn);
+                deletable.map(t =>
+                    authFetch(`${BASE_URL}/api/todos/delete/${t.id}`, { method: "DELETE" })
+                        .then(res => ({ ok: res.ok, status: res.status, title: t.title }))
+                )
+            ).then(results => {
+                const failed = results.filter(r => !r.ok);
+                if (failed.length > 0) {
+                    alert(
+                        `${failed.length} görev silinemedi:\n` +
+                        failed.map(f => `• ${f.title} (HTTP ${f.status})`).join("\n")
+                    );
+                }
+                reloadFn();
+            });
         })
         .catch(err => console.error(err));
 }
@@ -469,12 +869,9 @@ function deleteCompletedAssigned() {
 }
 
 function toggleStatus(todo) {
-    fetch(`${BASE_URL}/api/todos/update/${todo.id}`, {
+    authFetch(`${BASE_URL}/api/todos/update/${todo.id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             ...todo,
             completed: !todo.completed
@@ -483,8 +880,13 @@ function toggleStatus(todo) {
         .then(() => getTodos());
 }
 
+// Görev detaylarını (başlık/açıklama/tarih/öncelik) düzenlemek artık sadece
+// yöneticinin "Atadıklarım" listesinden erişebildiği bir işlem - çalışan sadece
+// tamamlandı kutucuğunu işaretleyebiliyor, notlar için 📝'yi kullanıyor.
+let currentEditTodo = null;
+
 function openModal(todo) {
-    currentId = todo.id;
+    currentEditTodo = todo;
     document.getElementById("editTitle").value = todo.title || "";
     document.getElementById("editDesc").value = todo.description || "";
     document.getElementById("editDueDate").value = todo.dueDate || "";
@@ -494,35 +896,142 @@ function openModal(todo) {
 
 function closeModal() {
     document.getElementById("modal").style.display = "none";
+    currentEditTodo = null;
 }
 
 function saveUpdate() {
-    fetch(`${BASE_URL}/api/todos`, {
-        headers: {
-            Authorization: `Bearer ${getToken()}`
-        }
+    authFetch(`${BASE_URL}/api/todos/assigned/${currentEditTodo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title: document.getElementById("editTitle").value,
+            description: document.getElementById("editDesc").value,
+            dueDate: document.getElementById("editDueDate").value || null,
+            priority: document.getElementById("editPriority").value
+        })
     })
+        .then(res => {
+            if (!res.ok) return res.json().then(err => { throw new Error(err.message || "Görev güncellenemedi"); });
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            closeModal();
+            loadAssignedByMe();
+        });
+}
+
+// Görev üzerinde şu ana kadar düşülen notları ve devir kayıtlarını gösteren modalı açar.
+// editable=true ise (görevin şu anki sahibi kendi ekranındaysa) not ekleme/devretme formları da gösterilir;
+// yönetici "Atadıklarım" listesinden açtığında sadece okunur.
+let currentLogTodo = null;
+
+function openLogModal(todo, editable) {
+    currentLogTodo = todo;
+
+    document.getElementById("logNoteForm").style.display = editable ? "block" : "none";
+
+    loadLog();
+    if (editable) loadTeammatesForHandoff();
+
+    document.getElementById("logModal").style.display = "block";
+}
+
+function closeLogModal() {
+    document.getElementById("logModal").style.display = "none";
+    currentLogTodo = null;
+}
+
+function loadLog() {
+    authFetch(`${BASE_URL}/api/todos/${currentLogTodo.id}/log`)
         .then(res => res.json())
         .then(data => {
-            const currentTodo = data.find(t => t.id === currentId);
+            const list = document.getElementById("logList");
 
-            return fetch(`${BASE_URL}/api/todos/update/${currentId}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${getToken()}`
-                },
-                body: JSON.stringify({
-                    ...currentTodo,
-                    title: document.getElementById("editTitle").value,
-                    description: document.getElementById("editDesc").value,
-                    dueDate: document.getElementById("editDueDate").value || null,
-                    priority: document.getElementById("editPriority").value
-                })
-            });
+            if (data.length === 0) {
+                list.innerHTML = "<p>Henüz bir not veya devir kaydı yok.</p>";
+                return;
+            }
+
+            list.innerHTML = data.map(entry => {
+                const date = new Date(entry.createdAt).toLocaleString("tr-TR");
+                const badge = entry.type === "HANDOFF"
+                    ? `<span class="priority-badge status-progress">🔁 Devir</span>`
+                    : "";
+
+                return `
+                    <div class="todo-card">
+                        <div class="todo-content">
+                            <div class="todo-desc">${entry.content}</div>
+                            <div class="todo-meta">
+                                <span class="todo-date">${entry.authorFullName} · ${date}</span>
+                                ${badge}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
         })
-        .then(() => {
-            closeModal();
+        .catch(err => console.error(err));
+}
+
+function addNote() {
+    const content = document.getElementById("noteContent").value.trim();
+    if (!content) {
+        alert("Not boş olamaz.");
+        return;
+    }
+
+    authFetch(`${BASE_URL}/api/todos/${currentLogTodo.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Not eklenemedi");
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            document.getElementById("noteContent").value = "";
+            loadLog();
+        });
+}
+
+function loadTeammatesForHandoff() {
+    authFetch(`${BASE_URL}/api/teams/my-teammates`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("handoffAssignee");
+            select.innerHTML = data.length
+                ? data.map(w => `<option value="${w.id}">${w.fullName} (${w.username})</option>`).join("")
+                : `<option value="">Ekibinde başka çalışan yok</option>`;
+        })
+        .catch(err => console.error(err));
+}
+
+function handoffTodo() {
+    const newAssigneeId = document.getElementById("handoffAssignee").value;
+    if (!newAssigneeId) {
+        alert("Devredilecek çalışan bulunamadı.");
+        return;
+    }
+
+    const message = document.getElementById("handoffMessage").value.trim();
+
+    authFetch(`${BASE_URL}/api/todos/${currentLogTodo.id}/handoff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newAssigneeId: Number(newAssigneeId), message: message || null })
+    })
+        .then(res => {
+            if (!res.ok) return res.json().then(err => { throw new Error(err.message || "Görev devredilemedi"); });
+            return res.json();
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            document.getElementById("handoffMessage").value = "";
+            closeLogModal();
             getTodos();
         });
 }
