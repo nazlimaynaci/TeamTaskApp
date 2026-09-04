@@ -1,4 +1,8 @@
-const BASE_URL = "http://localhost:8080";
+// Yerelde çalışırken localhost:8080'e, canlıda (Render'a deploy edilince) gerçek backend
+// adresine gider - sayfanın kendisi hangi adresten açıldıysa ona göre otomatik seçiliyor.
+const BASE_URL = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? "http://localhost:8080"
+    : "https://nazlim-task-manager-api.onrender.com";
 
 let currentFilter = "all";
 
