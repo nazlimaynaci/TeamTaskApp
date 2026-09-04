@@ -4,7 +4,9 @@ import com.nazlim.test2todolist.dto.LoginRequest;
 import com.nazlim.test2todolist.dto.RegisterRequest;
 import com.nazlim.test2todolist.dto.AuthResponse;
 import com.nazlim.test2todolist.entity.AppUser;
+import com.nazlim.test2todolist.entity.InviteCode;
 import com.nazlim.test2todolist.entity.Role;
+import com.nazlim.test2todolist.repository.InviteCodeRepository;
 import com.nazlim.test2todolist.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,14 +21,19 @@ public class AuthService {
     private final UserRepository users;
     private final JwtService jwt;
     private final PasswordEncoder encoder;
+    private final InviteCodeRepository inviteCodes;
 
+    // Sabit "ana kod" - ilk kurulum / yeni ortam bootstrap'i için (henüz hiçbir yönetici
+    // yokken tek kullanımlık kod üretecek kimse de yok). Normal akışta yöneticiler
+    // birbirine tek kullanımlık kod üretip (bkz. InviteCodeService) onu paylaşır.
     @Value("${manager.invite-code}")
     private String managerInviteCode;
 
-    public AuthService(UserRepository users, JwtService jwt, PasswordEncoder encoder) {
+    public AuthService(UserRepository users, JwtService jwt, PasswordEncoder encoder, InviteCodeRepository inviteCodes) {
         this.users = users;
         this.jwt = jwt;
         this.encoder = encoder;
+        this.inviteCodes = inviteCodes;
     }
 
     public void register(RegisterRequest req) {
@@ -39,6 +46,7 @@ public class AuthService {
         }
 
         Role role = Role.valueOf(req.role());
+        InviteCode consumedInvite = null;
 
         if (role == Role.MANAGER) {
             if (!StringUtils.hasText(req.phone())) {
@@ -47,8 +55,11 @@ public class AuthService {
             if (!StringUtils.hasText(req.company())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Şirket/Departman adı zorunlu");
             }
-            if (!managerInviteCode.equals(req.inviteCode())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Geçersiz davet kodu");
+
+            boolean isMasterCode = managerInviteCode.equals(req.inviteCode());
+            if (!isMasterCode) {
+                consumedInvite = inviteCodes.findByCodeAndUsedFalse(req.inviteCode())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Geçersiz davet kodu"));
             }
         }
 
@@ -62,7 +73,13 @@ public class AuthService {
         user.setCompany(req.company());
         user.setPosition(req.position());
 
-        users.save(user);
+        AppUser saved = users.save(user);
+
+        if (consumedInvite != null) {
+            consumedInvite.setUsed(true);
+            consumedInvite.setUsedBy(saved);
+            inviteCodes.save(consumedInvite);
+        }
     }
 
     public AuthResponse login(LoginRequest req) {

@@ -1,9 +1,13 @@
 package com.nazlim.test2todolist.controllers;
 
+import com.nazlim.test2todolist.dto.AddNoteRequest;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
+import com.nazlim.test2todolist.dto.HandoffRequest;
 import com.nazlim.test2todolist.dto.RejectTodoRequest;
+import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
+import com.nazlim.test2todolist.dto.UpdateAssignedTodoRequest;
 import com.nazlim.test2todolist.services.TodoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -82,5 +86,27 @@ public class TodoController {
     @PreAuthorize("hasRole('MANAGER')")
     public TodoResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectTodoRequest req) {
         return service.reject(id, req != null ? req : new RejectTodoRequest(null));
+    }
+
+    @GetMapping("/{id}/log")
+    public List<TodoLogEntryResponse> getLog(@PathVariable Long id) {
+        return service.getLog(id);
+    }
+
+    @PostMapping("/{id}/notes")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TodoLogEntryResponse addNote(@PathVariable Long id, @Valid @RequestBody AddNoteRequest req) {
+        return service.addNote(id, req);
+    }
+
+    @PostMapping("/{id}/handoff")
+    public TodoResponse handoff(@PathVariable Long id, @Valid @RequestBody HandoffRequest req) {
+        return service.handoff(id, req);
+    }
+
+    @PutMapping("/assigned/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public TodoResponse updateAssignedDetails(@PathVariable Long id, @Valid @RequestBody UpdateAssignedTodoRequest req) {
+        return service.updateAssignedDetails(id, req);
     }
 }

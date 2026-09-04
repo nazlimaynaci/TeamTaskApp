@@ -6,3 +6,4 @@ __MACOSX/
 *.log
 *.iml
 .env
+.claude/

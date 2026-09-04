@@ -25,4 +25,8 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByAssignedByAndApprovalStatus(AppUser assignedBy, ApprovalStatus approvalStatus);
 
     List<Todo> findByCompletedFalseAndReminderSentFalseAndDueDateBetween(LocalDate start, LocalDate end);
+
+    long countByUserAndCompletedAndAssignedByIsNotNull(AppUser user, boolean completed);
+
+    long countByUserAndApprovalStatus(AppUser user, ApprovalStatus approvalStatus);
 }

@@ -35,6 +35,10 @@ public class AppUser {
 
     private String position;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = true)
+    private Team team;
+
     @OneToMany(mappedBy = "user")
     private List<Todo> todos;
 
@@ -116,5 +120,13 @@ public class AppUser {
 
     public void setPosition(String position) {
         this.position = position;
+    }
+
+    public Team getTeam() {
+        return team;
+    }
+
+    public void setTeam(Team team) {
+        this.team = team;
     }
 }

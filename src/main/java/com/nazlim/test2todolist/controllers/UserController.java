@@ -1,5 +1,6 @@
 package com.nazlim.test2todolist.controllers;
 
+import com.nazlim.test2todolist.dto.MyProfileResponse;
 import com.nazlim.test2todolist.dto.UserSummaryResponse;
 import com.nazlim.test2todolist.services.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,9 +18,20 @@ public class UserController {
         this.service = service;
     }
 
+    @GetMapping("/me")
+    public MyProfileResponse getMyProfile() {
+        return service.getMyProfile();
+    }
+
     @GetMapping("/workers")
     @PreAuthorize("hasRole('MANAGER')")
     public List<UserSummaryResponse> getWorkers() {
         return service.getWorkers();
+    }
+
+    @GetMapping("/workers/unassigned")
+    @PreAuthorize("hasRole('MANAGER')")
+    public List<UserSummaryResponse> getUnassignedWorkers() {
+        return service.getUnassignedWorkers();
     }
 }

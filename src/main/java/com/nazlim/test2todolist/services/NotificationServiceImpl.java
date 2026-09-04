@@ -54,6 +54,12 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public void notifyHandoff(AppUser newAssignee, Todo todo, AppUser fromUser) {
+        String message = fromUser.getFullName() + " \"" + todo.getTitle() + "\" görevini sana devretti";
+        create(newAssignee, message, todo.getId());
+    }
+
+    @Override
     public void notifyDueSoon(AppUser recipient, Todo todo, long daysRemaining) {
         String when = daysRemaining <= 0 ? "bugün" : daysRemaining + " gün içinde";
         String message = "\"" + todo.getTitle() + "\" görevinin bitiş tarihine " + when + " kaldı";

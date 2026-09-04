@@ -1,8 +1,10 @@
 package com.nazlim.test2todolist.mapper;
 
+import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.entity.Todo;
+import com.nazlim.test2todolist.entity.TodoLogEntry;
 
 public class TodoMapper {
 
@@ -31,6 +33,17 @@ public class TodoMapper {
                 assigneeUsername,
                 todo.getApprovalStatus().name(),
                 todo.getRejectionReason()
+        );
+    }
+
+    public static TodoLogEntryResponse toLogResponse(TodoLogEntry entry) {
+        return new TodoLogEntryResponse(
+                entry.getId(),
+                entry.getAuthor().getFullName(),
+                entry.getAuthor().getUsername(),
+                entry.getContent(),
+                entry.getType().name(),
+                entry.getCreatedAt()
         );
     }
 }

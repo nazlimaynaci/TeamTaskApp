@@ -1,20 +1,28 @@
 package com.nazlim.test2todolist.services;
 
 import com.nazlim.test2todolist.auth.UserRepository;
+import com.nazlim.test2todolist.dto.AddNoteRequest;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
+import com.nazlim.test2todolist.dto.HandoffRequest;
 import com.nazlim.test2todolist.dto.RejectTodoRequest;
+import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
+import com.nazlim.test2todolist.dto.UpdateAssignedTodoRequest;
 import com.nazlim.test2todolist.entity.AppUser;
 import com.nazlim.test2todolist.entity.ApprovalStatus;
+import com.nazlim.test2todolist.entity.LogEntryType;
 import com.nazlim.test2todolist.entity.Role;
 import com.nazlim.test2todolist.entity.Todo;
+import com.nazlim.test2todolist.entity.TodoLogEntry;
 import com.nazlim.test2todolist.mapper.TodoMapper;
+import com.nazlim.test2todolist.repository.TodoLogEntryRepository;
 import com.nazlim.test2todolist.repository.TodoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -30,15 +38,22 @@ public class TodoServiceImpl implements TodoService {
 
     private final NotificationService notificationService;
 
-    public TodoServiceImpl(TodoRepository repo, UserRepository userRepository, NotificationService notificationService) {
+    private final TodoLogEntryRepository logRepo;
+
+    public TodoServiceImpl(TodoRepository repo, UserRepository userRepository, NotificationService notificationService, TodoLogEntryRepository logRepo) {
         this.repo = repo;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.logRepo = logRepo;
     }
 
     @Override
     public TodoResponse create(TodoRequest request) {
         AppUser currentUser = getCurrentUser();
+
+        if (request.getDueDate() != null && request.getDueDate().isBefore(LocalDate.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Geçmiş bir tarihe görev eklenemez");
+        }
 
         Todo entity = TodoMapper.toEntity(request);
         entity.setUser(currentUser);
@@ -108,6 +123,7 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         AppUser currentUser = getCurrentUser();
 
@@ -121,6 +137,7 @@ public class TodoServiceImpl implements TodoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id);
         }
 
+        logRepo.deleteByTodo(existing);
         repo.delete(existing);
     }
     @Override
@@ -142,6 +159,10 @@ public class TodoServiceImpl implements TodoService {
 
         if (assignee.getRole() != Role.WORKER) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görev sadece çalışanlara atanabilir");
+        }
+
+        if (assignee.getTeam() == null || !assignee.getTeam().getManager().getId().equals(manager.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu çalışan senin ekibinde değil");
         }
 
         Todo entity = new Todo();
@@ -222,6 +243,118 @@ public class TodoServiceImpl implements TodoService {
         Todo saved = repo.save(todo);
         notificationService.notifyRejected(saved.getUser(), saved, request.reason());
         return TodoMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<TodoLogEntryResponse> getLog(Long todoId) {
+        AppUser currentUser = getCurrentUser();
+        Todo todo = getAccessibleTodo(todoId, currentUser);
+
+        return logRepo.findByTodoOrderByCreatedAtAsc(todo)
+                .stream()
+                .map(TodoMapper::toLogResponse)
+                .toList();
+    }
+
+    @Override
+    public TodoLogEntryResponse addNote(Long todoId, AddNoteRequest request) {
+        AppUser currentUser = getCurrentUser();
+
+        Todo todo = repo.findByIdAndUser(todoId, currentUser)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + todoId));
+
+        TodoLogEntry entry = new TodoLogEntry();
+        entry.setTodo(todo);
+        entry.setAuthor(currentUser);
+        entry.setContent(request.content());
+        entry.setType(LogEntryType.NOTE);
+
+        return TodoMapper.toLogResponse(logRepo.save(entry));
+    }
+
+    @Override
+    public TodoResponse handoff(Long todoId, HandoffRequest request) {
+        AppUser currentUser = getCurrentUser();
+
+        Todo todo = repo.findByIdAndUser(todoId, currentUser)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + todoId));
+
+        if (currentUser.getTeam() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bir ekibin yoksa görev devredemezsin");
+        }
+
+        AppUser newAssignee = userRepository.findById(request.newAssigneeId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
+
+        if (newAssignee.getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görevi kendine devredemezsin");
+        }
+
+        if (newAssignee.getRole() != Role.WORKER
+                || newAssignee.getTeam() == null
+                || !newAssignee.getTeam().getId().equals(currentUser.getTeam().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sadece kendi ekip arkadaşına devredebilirsin");
+        }
+
+        String content = currentUser.getFullName() + " bu görevi " + newAssignee.getFullName() + " kişisine devretti";
+        if (request.message() != null && !request.message().isBlank()) {
+            content += ": " + request.message();
+        }
+
+        TodoLogEntry entry = new TodoLogEntry();
+        entry.setTodo(todo);
+        entry.setAuthor(currentUser);
+        entry.setContent(content);
+        entry.setType(LogEntryType.HANDOFF);
+        logRepo.save(entry);
+
+        todo.setUser(newAssignee);
+        if (todo.isCompleted()) {
+            todo.setCompleted(false);
+            todo.setApprovalStatus(ApprovalStatus.NOT_APPLICABLE);
+            todo.setRejectionReason(null);
+        }
+
+        Todo saved = repo.save(todo);
+        notificationService.notifyHandoff(newAssignee, saved, currentUser);
+
+        return TodoMapper.toResponse(saved);
+    }
+
+    @Override
+    public TodoResponse updateAssignedDetails(Long todoId, UpdateAssignedTodoRequest request) {
+        AppUser manager = getCurrentUser();
+
+        Todo existing = repo.findByIdAndAssignedBy(todoId, manager)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı"));
+
+        LocalDate oldDueDate = existing.getDueDate();
+
+        existing.setTitle(request.title());
+        existing.setDescription(request.description());
+        existing.setDueDate(request.dueDate());
+        existing.setPriority(request.priority());
+
+        if (!Objects.equals(oldDueDate, existing.getDueDate())) {
+            existing.setReminderSent(false);
+        }
+
+        Todo saved = repo.save(existing);
+        return TodoMapper.toResponse(saved);
+    }
+
+    private Todo getAccessibleTodo(Long id, AppUser currentUser) {
+        Todo todo = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
+
+        boolean isOwner = todo.getUser() != null && todo.getUser().getId().equals(currentUser.getId());
+        boolean isAssigner = todo.getAssignedBy() != null && todo.getAssignedBy().getId().equals(currentUser.getId());
+
+        if (!isOwner && !isAssigner) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id);
+        }
+
+        return todo;
     }
 
     private AppUser getCurrentUser() {

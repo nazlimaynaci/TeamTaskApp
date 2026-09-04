@@ -1,9 +1,13 @@
 package com.nazlim.test2todolist.services;
 
+import com.nazlim.test2todolist.dto.AddNoteRequest;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
+import com.nazlim.test2todolist.dto.HandoffRequest;
 import com.nazlim.test2todolist.dto.RejectTodoRequest;
+import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
+import com.nazlim.test2todolist.dto.UpdateAssignedTodoRequest;
 
 import java.util.List;
 
@@ -19,4 +23,9 @@ public interface TodoService {
     List<TodoResponse> getByApprovalStatus(String status);
     TodoResponse approve(Long id);
     TodoResponse reject(Long id, RejectTodoRequest request);
+
+    List<TodoLogEntryResponse> getLog(Long todoId);
+    TodoLogEntryResponse addNote(Long todoId, AddNoteRequest request);
+    TodoResponse handoff(Long todoId, HandoffRequest request);
+    TodoResponse updateAssignedDetails(Long todoId, UpdateAssignedTodoRequest request);
 }
