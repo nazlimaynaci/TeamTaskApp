@@ -4,6 +4,7 @@ import com.nazlim.test2todolist.dto.TodoHistoryResponse;
 import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
+import com.nazlim.test2todolist.entity.TaskType;
 import com.nazlim.test2todolist.entity.Todo;
 import com.nazlim.test2todolist.entity.TodoLogEntry;
 
@@ -19,7 +20,19 @@ public class TodoMapper {
         t.setCompleted(req.isCompleted());
         t.setDueDate(req.getDueDate());
         t.setPriority(req.getPriority());
+        t.setTaskType(parseTaskType(req.getTaskType()));
         return t;
+    }
+
+    public static TaskType parseTaskType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return TaskType.DAILY;
+        }
+        try {
+            return TaskType.valueOf(raw.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return TaskType.DAILY;
+        }
     }
 
     public static TodoResponse toResponse(Todo todo) {
@@ -37,7 +50,8 @@ public class TodoMapper {
                 assigneeUsername,
                 todo.getApprovalStatus().name(),
                 todo.getRejectionReason(),
-                todo.getPerformanceRating()
+                todo.getPerformanceRating(),
+                todo.getTaskType() != null ? todo.getTaskType().name() : TaskType.DAILY.name()
         );
     }
 
@@ -55,7 +69,8 @@ public class TodoMapper {
                 todo.getCompletedAt(),
                 durationDays,
                 assignedByName,
-                todo.getPerformanceRating()
+                todo.getPerformanceRating(),
+                todo.getTaskType() != null ? todo.getTaskType().name() : TaskType.DAILY.name()
         );
     }
 

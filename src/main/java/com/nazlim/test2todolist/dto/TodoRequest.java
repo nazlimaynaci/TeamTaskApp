@@ -27,6 +27,11 @@ public class TodoRequest {
 
     private String priority;
 
+    private String taskType;
+
+    public String getTaskType() { return taskType; }
+    public void setTaskType(String taskType) { this.taskType = taskType; }
+
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 

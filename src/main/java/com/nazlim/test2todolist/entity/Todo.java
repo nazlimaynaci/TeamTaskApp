@@ -53,6 +53,12 @@ public class Todo {
 
     private Integer performanceRating;
 
+    // Nullable tutuluyor: yeni NOT NULL sütun eklemek, tabloda satır varken
+    // ddl-auto=update ile başarısız oluyor (created_at'te yaşandığı gibi).
+    // Java tarafında hep DAILY ile başlatılıyor, pratikte null olmaz.
+    @Enumerated(EnumType.STRING)
+    private TaskType taskType = TaskType.DAILY;
+
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
         this.title = title;
@@ -168,5 +174,13 @@ public class Todo {
 
     public void setPerformanceRating(Integer performanceRating) {
         this.performanceRating = performanceRating;
+    }
+
+    public TaskType getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(TaskType taskType) {
+        this.taskType = taskType;
     }
 }

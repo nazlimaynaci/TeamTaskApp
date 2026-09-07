@@ -12,6 +12,20 @@ let personalViewMode = "list";
 let assignedViewMode = "list";
 const calendarInstances = {};
 
+// Günlük / Uzun Vadeli görev türü filtreleri - kişisel liste ve Atadıklarım için ayrı ayrı.
+let personalTypeFilter = "all";
+let assignedTypeFilter = "all";
+
+function taskTypeBadge(todo) {
+    if (!todo || !todo.taskType) return "";
+    const isDaily = todo.taskType === "DAILY";
+    return `
+        <div class="todo-meta">
+            <span class="priority-badge ${isDaily ? "priority-low" : "priority-medium"}">${isDaily ? "📅 Günlük" : "📆 Uzun Vadeli"}</span>
+        </div>
+    `;
+}
+
 window.onload = function () {
     if (!getToken()) {
         window.location.href = "login.html";
@@ -219,6 +233,7 @@ function addTodo() {
     const description = document.getElementById("description").value.trim();
     const dueDate = document.getElementById("dueDate").value || null;
     const priority = document.getElementById("priority").value;
+    const taskType = document.getElementById("taskType").value;
 
     if (!title) {
         alert("Görev başlığı boş olamaz.");
@@ -232,7 +247,8 @@ function addTodo() {
             title: title,
             description: description,
             dueDate: dueDate,
-            priority: priority
+            priority: priority,
+            taskType: taskType
         })
     })
         .then(res => {
@@ -267,6 +283,7 @@ function getTodos() {
             updateCounter(data);
 
             const visible = data.filter(todo => {
+                if (personalTypeFilter !== "all" && todo.taskType !== personalTypeFilter) return false;
                 if (currentFilter === "active") return !todo.completed;
                 if (currentFilter === "completed") return todo.completed;
                 return true;
@@ -306,6 +323,7 @@ function renderPersonalList(visible) {
 
                     ${dueDateBadge(todo)}
                     ${priorityBadge(todo)}
+                    ${taskTypeBadge(todo)}
                     ${assignedByBadge(todo)}
                     ${todo.assignedByUsername ? `<div class="todo-meta">${approvalStatusBadge(todo)}</div>` : ""}
                 </div>
@@ -332,7 +350,12 @@ function renderPersonalCalendar(todos) {
 function loadMyHistory() {
     authFetch(`${BASE_URL}/api/todos/history`)
         .then(res => res.json())
-        .then(data => renderMyHistory(data))
+        .then(data => {
+            const filtered = personalTypeFilter === "all"
+                ? data
+                : data.filter(item => item.taskType === personalTypeFilter);
+            renderMyHistory(filtered);
+        })
         .catch(err => console.error(err));
 }
 
@@ -359,6 +382,7 @@ function renderMyHistory(history) {
                     <span class="priority-badge status-approved">⏱️ ${duration}</span>
                     <span class="todo-date">${date}</span>
                 </div>
+                ${taskTypeBadge(item)}
                 ${starsHtml(item.performanceRating)}
             </div>
         </div>
@@ -453,6 +477,7 @@ function renderWorkload(teamsData) {
                                 <div class="todo-title">${t.title || ""}</div>
                                 ${dueDateBadge(t)}
                                 ${priorityBadge(t)}
+                                ${taskTypeBadge(t)}
                             </div>
                         </div>
                     `).join("")}</div>`
@@ -700,6 +725,7 @@ function assignTodo() {
     const description = document.getElementById("assignDescription").value.trim();
     const dueDate = document.getElementById("assignDueDate").value || null;
     const priority = document.getElementById("assignPriority").value;
+    const taskType = document.getElementById("assignTaskType").value;
 
     if (!title) {
         alert("Görev başlığı boş olamaz.");
@@ -718,7 +744,8 @@ function assignTodo() {
             description: description,
             dueDate: dueDate,
             priority: priority,
-            assigneeId: Number(assigneeId)
+            assigneeId: Number(assigneeId),
+            taskType: taskType
         })
     })
         .then(res => {
@@ -738,13 +765,37 @@ function loadAssignedByMe() {
     authFetch(`${BASE_URL}/api/todos/assigned-by-me`)
         .then(res => res.json())
         .then(data => {
+            const filtered = assignedTypeFilter === "all"
+                ? data
+                : data.filter(todo => todo.taskType === assignedTypeFilter);
+
             if (assignedViewMode === "calendar") {
-                renderAssignedCalendar(data);
+                renderAssignedCalendar(filtered);
             } else {
-                renderAssignedList(data);
+                renderAssignedList(filtered);
             }
         })
         .catch(err => console.error(err));
+}
+
+function setPersonalTypeFilter(type) {
+    personalTypeFilter = type;
+
+    document.querySelectorAll("#personalTypeToggle .filter-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.type === type);
+    });
+
+    getTodos();
+}
+
+function setAssignedTypeFilter(type) {
+    assignedTypeFilter = type;
+
+    document.querySelectorAll("#assignedTypeToggle .filter-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.type === type);
+    });
+
+    loadAssignedByMe();
 }
 
 function renderAssignedList(data) {
@@ -766,6 +817,7 @@ function renderAssignedList(data) {
                     </div>
                     ${dueDateBadge(todo)}
                     ${priorityBadge(todo)}
+                    ${taskTypeBadge(todo)}
                     <div class="todo-meta">${approvalStatusBadge(todo)}</div>
                 </div>
             </div>
@@ -1203,6 +1255,7 @@ function renderMemberDetail(data) {
                     <div class="todo-title">${t.title || ""}</div>
                     ${dueDateBadge(t)}
                     ${priorityBadge(t)}
+                    ${taskTypeBadge(t)}
                 </div>
             </div>
         `).join("")
@@ -1221,6 +1274,7 @@ function renderMemberDetail(data) {
                             <span class="priority-badge status-approved">⏱️ ${duration}</span>
                             <span class="todo-date">${date}</span>
                         </div>
+                        ${taskTypeBadge(t)}
                         ${taskStarsHtml(t.performanceRating, t.id)}
                     </div>
                 </div>

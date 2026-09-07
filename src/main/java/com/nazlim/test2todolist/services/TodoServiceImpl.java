@@ -101,6 +101,7 @@ public class TodoServiceImpl implements TodoService {
         existing.setCompleted(request.isCompleted());
         existing.setDueDate(request.getDueDate());
         existing.setPriority(request.getPriority());
+        existing.setTaskType(TodoMapper.parseTaskType(request.getTaskType()));
 
         if (!Objects.equals(oldDueDate, existing.getDueDate())) {
             existing.setReminderSent(false);
@@ -180,6 +181,7 @@ public class TodoServiceImpl implements TodoService {
         entity.setDescription(request.description());
         entity.setDueDate(request.dueDate());
         entity.setPriority(request.priority());
+        entity.setTaskType(TodoMapper.parseTaskType(request.taskType()));
         entity.setCompleted(false);
         entity.setUser(assignee);
         entity.setAssignedBy(manager);
