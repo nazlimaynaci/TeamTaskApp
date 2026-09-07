@@ -57,10 +57,6 @@
                         <option value="medium">Orta</option>
                         <option value="high">Yüksek</option>
                     </select>
-                    <select id="assignTaskType" class="soft-input small-input">
-                        <option value="DAILY">📅 Günlük</option>
-                        <option value="LONG_TERM">📆 Uzun Vadeli</option>
-                    </select>
                     <button class="primary-btn" onclick="assignTodo()">Ata</button>
                 </div>
             </section>
@@ -69,12 +65,6 @@
                 <div class="section-head">
                     <h2>📋 Atadıklarım</h2>
                     <button class="secondary-btn" onclick="deleteCompletedAssigned()">🗑️ Tamamlananları Sil</button>
-                </div>
-
-                <div id="assignedTypeToggle" class="filter-tabs">
-                    <button class="filter-tab active" data-type="all" onclick="setAssignedTypeFilter('all')">Tümü</button>
-                    <button class="filter-tab" data-type="DAILY" onclick="setAssignedTypeFilter('DAILY')">📅 Günlük</button>
-                    <button class="filter-tab" data-type="LONG_TERM" onclick="setAssignedTypeFilter('LONG_TERM')">📆 Uzun Vadeli</button>
                 </div>
 
                 <div id="assignedViewToggle" class="filter-tabs view-toggle">
@@ -131,10 +121,6 @@
                     <option value="medium">Orta</option>
                     <option value="high">Yüksek</option>
                 </select>
-                <select id="taskType" class="soft-input small-input">
-                    <option value="DAILY">📅 Günlük</option>
-                    <option value="LONG_TERM">📆 Uzun Vadeli</option>
-                </select>
                 <button class="add-btn" onclick="addTodo()">+</button>
             </div>
         </section>
@@ -150,12 +136,6 @@
                 <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">Tümü</button>
                 <button class="filter-tab" data-filter="active" onclick="setFilter('active')">Aktif</button>
                 <button class="filter-tab" data-filter="completed" onclick="setFilter('completed')">📁 Projelerim</button>
-            </div>
-
-            <div id="personalTypeToggle" class="filter-tabs">
-                <button class="filter-tab active" data-type="all" onclick="setPersonalTypeFilter('all')">Tümü</button>
-                <button class="filter-tab" data-type="DAILY" onclick="setPersonalTypeFilter('DAILY')">📅 Günlük</button>
-                <button class="filter-tab" data-type="LONG_TERM" onclick="setPersonalTypeFilter('LONG_TERM')">📆 Uzun Vadeli</button>
             </div>
 
             <div id="personalViewToggle" class="filter-tabs view-toggle">

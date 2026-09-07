@@ -14,11 +14,10 @@ public class TodoResponse {
     private String approvalStatus;
     private String rejectionReason;
     private Integer performanceRating;
-    private String taskType;
 
     public TodoResponse(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority,
                          String assignedByUsername, String assigneeUsername, String approvalStatus, String rejectionReason,
-                         Integer performanceRating, String taskType) {
+                         Integer performanceRating) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -30,7 +29,6 @@ public class TodoResponse {
         this.approvalStatus = approvalStatus;
         this.rejectionReason = rejectionReason;
         this.performanceRating = performanceRating;
-        this.taskType = taskType;
     }
 
 
@@ -56,8 +54,5 @@ public class TodoResponse {
     }
     public Integer getPerformanceRating() {
         return performanceRating;
-    }
-    public String getTaskType() {
-        return taskType;
     }
 }

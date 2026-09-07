@@ -11,7 +11,6 @@ public record TodoHistoryResponse(
         Instant completedAt,
         Long durationDays,
         String assignedByName,
-        Integer performanceRating,
-        String taskType
+        Integer performanceRating
 ) {
 }

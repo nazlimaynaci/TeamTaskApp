@@ -12,7 +12,6 @@ public record AssignTodoRequest(
         @Size(max = 500) String description,
         @FutureOrPresent(message = "Geçmiş bir tarihe görev atanamaz") LocalDate dueDate,
         String priority,
-        @NotNull Long assigneeId,
-        String taskType
+        @NotNull Long assigneeId
 ) {
 }
