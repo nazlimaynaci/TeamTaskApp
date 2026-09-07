@@ -29,9 +29,4 @@ public class UserController {
         return service.getWorkers();
     }
 
-    @GetMapping("/workers/unassigned")
-    @PreAuthorize("hasRole('MANAGER')")
-    public List<UserSummaryResponse> getUnassignedWorkers() {
-        return service.getUnassignedWorkers();
-    }
 }

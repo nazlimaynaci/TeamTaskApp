@@ -188,23 +188,27 @@ function loadMyProfile() {
         .catch(err => console.error(err));
 }
 
-// Sadece çalışan rolündeki kullanıcı için: hangi ekipte olduğunu ve
-// o ekibin yöneticisini gösterir. Henüz bir ekibe eklenmediyse (204) kutuyu gizler.
+// Sadece çalışan rolündeki kullanıcı için: üye olduğu TÜM ekipleri ve her birinin
+// yöneticisini gösterir (bir çalışan artık birden fazla ekipte olabilir). Hiç ekibi
+// yoksa kutuyu gizler.
 function loadMyTeam() {
-    authFetch(`${BASE_URL}/api/teams/my-team`)
+    authFetch(`${BASE_URL}/api/teams/my-teams`)
         .then(res => {
-            if (res.status === 204) return null;
             if (!res.ok) throw new Error("Ekip bilgisi alınamadı");
             return res.json();
         })
         .then(data => {
             const el = document.getElementById("teamInfo");
-            if (!data) {
+            if (!data.length) {
                 el.style.display = "none";
                 return;
             }
-            el.textContent = `🧑‍🤝‍🧑 ${data.teamName} — 👔 Yönetici: ${data.managerFullName}`;
-            el.style.display = "inline-block";
+            el.innerHTML = data.map(t => `<span class="team-info">🧑‍🤝‍🧑 ${t.teamName} — 👔 Yönetici: ${t.managerFullName}</span>`).join("");
+            el.style.display = "flex";
+            el.style.flexWrap = "wrap";
+            el.style.gap = "8px";
+            el.style.justifyContent = "center";
+            el.style.marginTop = "14px";
         })
         .catch(err => console.error(err));
 }
@@ -630,21 +634,22 @@ function renderTeamsPanel(teamsData) {
     fillUnassignedSelects(teamsData);
 }
 
-// Her ekip kartındaki "ekle" dropdown'ını, henüz hiçbir ekipte olmayan
-// çalışanlarla doldurur (aynı çalışan listesi tüm kartlarda tekrar kullanılır).
+// Her ekip kartındaki "ekle" dropdown'ını, o ekipte HENÜZ olmayan çalışanlarla
+// doldurur - bir çalışan başka bir ekipte (hatta başka bir yöneticide) olsa bile
+// burada listelenir, çünkü artık aynı anda birden fazla ekibe üye olabiliyor.
 function fillUnassignedSelects(teamsData) {
-    authFetch(`${BASE_URL}/api/users/workers/unassigned`)
-        .then(res => res.json())
-        .then(workers => {
-            teamsData.forEach(team => {
+    teamsData.forEach(team => {
+        authFetch(`${BASE_URL}/api/teams/${team.id}/available-workers`)
+            .then(res => res.json())
+            .then(workers => {
                 const select = document.getElementById(`unassignedSelect-${team.id}`);
                 if (!select) return;
                 select.innerHTML = workers.length
                     ? workers.map(w => `<option value="${w.id}">${w.fullName} (${w.username})</option>`).join("")
-                    : `<option value="">Ekipsiz çalışan yok</option>`;
-            });
-        })
-        .catch(err => console.error(err));
+                    : `<option value="">Eklenecek çalışan yok</option>`;
+            })
+            .catch(err => console.error(err));
+    });
 }
 
 // Görev atama panelindeki select'i ekiplere göre grupluyor (optgroup),

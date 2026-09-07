@@ -35,14 +35,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserSummaryResponse> getUnassignedWorkers() {
-        return users.findByRoleAndTeamIsNull(Role.WORKER)
-                .stream()
-                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername(), u.getFullName(), avgRatingFor(u)))
-                .toList();
-    }
-
-    @Override
     public MyProfileResponse getMyProfile() {
         AppUser user = getCurrentUser();
         return new MyProfileResponse(user.getFullName(), user.getUsername(), user.getRole().name(), user.getCompany(), user.getPosition(), avgRatingFor(user));

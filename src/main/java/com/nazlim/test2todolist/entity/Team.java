@@ -2,7 +2,8 @@ package com.nazlim.test2todolist.entity;
 
 import jakarta.persistence.*;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "teams")
@@ -19,8 +20,8 @@ public class Team {
     @JoinColumn(name = "manager_id", nullable = false)
     private AppUser manager;
 
-    @OneToMany(mappedBy = "team")
-    private List<AppUser> members;
+    @ManyToMany(mappedBy = "teams")
+    private Set<AppUser> members = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -46,11 +47,11 @@ public class Team {
         this.manager = manager;
     }
 
-    public List<AppUser> getMembers() {
+    public Set<AppUser> getMembers() {
         return members;
     }
 
-    public void setMembers(List<AppUser> members) {
+    public void setMembers(Set<AppUser> members) {
         this.members = members;
     }
 }

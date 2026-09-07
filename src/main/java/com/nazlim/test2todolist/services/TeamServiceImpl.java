@@ -70,11 +70,8 @@ public class TeamServiceImpl implements TeamService {
         if (worker.getRole() != Role.WORKER) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sadece çalışanlar ekibe eklenebilir");
         }
-        if (worker.getTeam() != null && !worker.getTeam().getManager().getId().equals(manager.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu çalışan başka bir yöneticinin ekibinde");
-        }
 
-        worker.setTeam(team);
+        worker.getTeams().add(team);
         users.save(worker);
 
         return toResponse(teams.findById(teamId).orElseThrow());
@@ -88,11 +85,11 @@ public class TeamServiceImpl implements TeamService {
         AppUser worker = users.findById(workerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
 
-        if (worker.getTeam() == null || !worker.getTeam().getId().equals(team.getId())) {
+        if (!team.getMembers().contains(worker)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bu çalışan bu ekipte değil");
         }
 
-        worker.setTeam(null);
+        worker.getTeams().remove(team);
         users.save(worker);
 
         return toResponse(teams.findById(teamId).orElseThrow());
@@ -103,37 +100,43 @@ public class TeamServiceImpl implements TeamService {
         AppUser manager = getCurrentUser();
         Team team = getOwnedTeam(teamId, manager);
 
-        team.getMembers().forEach(member -> member.setTeam(null));
+        team.getMembers().forEach(member -> member.getTeams().remove(team));
         users.saveAll(team.getMembers());
 
         teams.delete(team);
     }
 
     @Override
-    public MyTeamResponse getMyTeam() {
+    public List<MyTeamResponse> getMyTeamMemberships() {
         AppUser worker = getCurrentUser();
-        Team team = worker.getTeam();
 
-        if (team == null) {
-            return null;
-        }
-
-        AppUser manager = team.getManager();
-        return new MyTeamResponse(team.getName(), manager.getFullName(), manager.getUsername());
+        return worker.getTeams().stream()
+                .map(team -> new MyTeamResponse(team.getName(), team.getManager().getFullName(), team.getManager().getUsername()))
+                .toList();
     }
 
     @Override
     public List<UserSummaryResponse> getMyTeammates() {
         AppUser worker = getCurrentUser();
-        Team team = worker.getTeam();
 
-        if (team == null) {
-            return List.of();
-        }
-
-        return team.getMembers().stream()
+        return worker.getTeams().stream()
+                .flatMap(team -> team.getMembers().stream())
                 .filter(m -> !m.getId().equals(worker.getId()))
+                .collect(java.util.stream.Collectors.toMap(AppUser::getId, m -> m, (a, b) -> a))
+                .values()
+                .stream()
                 .map(m -> new UserSummaryResponse(m.getId(), m.getUsername(), m.getFullName(), avgRatingFor(m)))
+                .toList();
+    }
+
+    @Override
+    public List<UserSummaryResponse> getAvailableWorkersForTeam(Long teamId) {
+        AppUser manager = getCurrentUser();
+        Team team = getOwnedTeam(teamId, manager);
+
+        return users.findByRole(Role.WORKER).stream()
+                .filter(w -> !team.getMembers().contains(w))
+                .map(w -> new UserSummaryResponse(w.getId(), w.getUsername(), w.getFullName(), avgRatingFor(w)))
                 .toList();
     }
 
@@ -181,7 +184,9 @@ public class TeamServiceImpl implements TeamService {
         AppUser worker = users.findById(workerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
 
-        if (worker.getTeam() == null || !worker.getTeam().getManager().getId().equals(manager.getId())) {
+        boolean managesWorker = worker.getTeams().stream()
+                .anyMatch(t -> t.getManager().getId().equals(manager.getId()));
+        if (!managesWorker) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı");
         }
 

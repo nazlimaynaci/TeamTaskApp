@@ -15,8 +15,9 @@ public interface TeamService {
     TeamResponse addMember(Long teamId, Long workerId);
     TeamResponse removeMember(Long teamId, Long workerId);
     void deleteTeam(Long teamId);
-    MyTeamResponse getMyTeam();
+    List<MyTeamResponse> getMyTeamMemberships();
     List<UserSummaryResponse> getMyTeammates();
     List<TeamWorkloadResponse> getMyTeamsWorkload();
     WorkerDetailResponse getMemberDetail(Long workerId);
+    List<UserSummaryResponse> getAvailableWorkersForTeam(Long teamId);
 }

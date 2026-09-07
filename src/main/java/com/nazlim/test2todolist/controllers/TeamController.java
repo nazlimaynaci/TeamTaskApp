@@ -9,7 +9,6 @@ import com.nazlim.test2todolist.dto.WorkerDetailResponse;
 import com.nazlim.test2todolist.services.TeamService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +46,11 @@ public class TeamController {
         return service.getMemberDetail(workerId);
     }
 
+    @GetMapping("/{teamId}/available-workers")
+    public List<UserSummaryResponse> getAvailableWorkers(@PathVariable Long teamId) {
+        return service.getAvailableWorkersForTeam(teamId);
+    }
+
     @PutMapping("/{teamId}/members/{workerId}")
     public TeamResponse addMember(@PathVariable Long teamId, @PathVariable Long workerId) {
         return service.addMember(teamId, workerId);
@@ -65,11 +69,11 @@ public class TeamController {
 
     // Sınıf seviyesindeki @PreAuthorize("MANAGER") kuralını bu tek endpoint için eziyor:
     // burada çalışanın kendi ekip/yönetici bilgisini görmesi gerekiyor, yönetici değil.
-    @GetMapping("/my-team")
+    // Çalışan artık birden fazla ekibe üye olabildiği için liste dönüyor (boş liste = hiç ekibi yok).
+    @GetMapping("/my-teams")
     @PreAuthorize("hasRole('WORKER')")
-    public ResponseEntity<MyTeamResponse> getMyTeam() {
-        MyTeamResponse response = service.getMyTeam();
-        return response != null ? ResponseEntity.ok(response) : ResponseEntity.noContent().build();
+    public List<MyTeamResponse> getMyTeams() {
+        return service.getMyTeamMemberships();
     }
 
     @GetMapping("/my-teammates")

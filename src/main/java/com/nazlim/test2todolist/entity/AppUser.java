@@ -3,7 +3,9 @@ package com.nazlim.test2todolist.entity;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name="users")
@@ -35,9 +37,11 @@ public class AppUser {
 
     private String position;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = true)
-    private Team team;
+    @ManyToMany
+    @JoinTable(name = "team_members",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "team_id"))
+    private Set<Team> teams = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
     private List<Todo> todos;
@@ -122,11 +126,11 @@ public class AppUser {
         this.position = position;
     }
 
-    public Team getTeam() {
-        return team;
+    public Set<Team> getTeams() {
+        return teams;
     }
 
-    public void setTeam(Team team) {
-        this.team = team;
+    public void setTeams(Set<Team> teams) {
+        this.teams = teams;
     }
 }

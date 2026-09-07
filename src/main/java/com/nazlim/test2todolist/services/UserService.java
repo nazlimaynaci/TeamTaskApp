@@ -7,6 +7,5 @@ import java.util.List;
 
 public interface UserService {
     List<UserSummaryResponse> getWorkers();
-    List<UserSummaryResponse> getUnassignedWorkers();
     MyProfileResponse getMyProfile();
 }

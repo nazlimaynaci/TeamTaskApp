@@ -171,7 +171,9 @@ public class TodoServiceImpl implements TodoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görev sadece çalışanlara atanabilir");
         }
 
-        if (assignee.getTeam() == null || !assignee.getTeam().getManager().getId().equals(manager.getId())) {
+        boolean inManagerTeam = assignee.getTeams().stream()
+                .anyMatch(t -> t.getManager().getId().equals(manager.getId()));
+        if (!inManagerTeam) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu çalışan senin ekibinde değil");
         }
 
@@ -320,7 +322,7 @@ public class TodoServiceImpl implements TodoService {
         Todo todo = repo.findByIdAndUser(todoId, currentUser)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + todoId));
 
-        if (currentUser.getTeam() == null) {
+        if (currentUser.getTeams().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bir ekibin yoksa görev devredemezsin");
         }
 
@@ -331,9 +333,8 @@ public class TodoServiceImpl implements TodoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görevi kendine devredemezsin");
         }
 
-        if (newAssignee.getRole() != Role.WORKER
-                || newAssignee.getTeam() == null
-                || !newAssignee.getTeam().getId().equals(currentUser.getTeam().getId())) {
+        boolean shareTeam = currentUser.getTeams().stream().anyMatch(newAssignee.getTeams()::contains);
+        if (newAssignee.getRole() != Role.WORKER || !shareTeam) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sadece kendi ekip arkadaşına devredebilirsin");
         }
 
