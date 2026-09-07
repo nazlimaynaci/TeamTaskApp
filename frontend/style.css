@@ -79,131 +79,111 @@ a {
     transition: color 0.15s var(--ease);
 }
 
-/* AUTH PAGES */
+/* AUTH PAGES — full-bleed gradient with a glassmorphism card */
 .auth-body {
     min-height: 100vh;
-    background: radial-gradient(circle at 15% 15%, var(--primary-tint), var(--bg-main) 55%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    background: linear-gradient(135deg, #f0a63f 0%, var(--primary) 30%, #c9407a 65%, #6a3aa8 100%);
+    background-attachment: fixed;
 }
 
 .auth-page {
-    min-height: 100vh;
+    width: 100%;
+    max-width: 420px;
 }
 
 .auth-top {
-    height: 220px;
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.auth-logo {
-    width: 54px;
-    height: 54px;
-    margin: 0 auto 14px;
-    border-radius: var(--radius-md);
+.auth-logo,
+.auth-icon-circle {
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 18px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 38px;
 }
 
 .auth-header {
-    position: relative;
-    z-index: 2;
     text-align: center;
     color: white;
+    margin-bottom: 22px;
 }
 
 .auth-header h1 {
-    font-size: 32px;
+    font-size: 26px;
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .auth-header p {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 500;
-    opacity: 0.9;
+    opacity: 0.85;
 }
 
 .auth-circle {
-    display: block;
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.auth-circle-left {
-    width: 200px;
-    height: 200px;
-    top: -80px;
-    left: -60px;
-}
-
-.auth-circle-right {
-    width: 260px;
-    height: 260px;
-    bottom: -140px;
-    right: -80px;
+    display: none;
 }
 
 .auth-card {
     width: 100%;
-    max-width: 420px;
-    margin: -48px auto 40px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: var(--radius-xl);
     padding: 36px 32px;
-    position: relative;
-    z-index: 5;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 24px 60px rgba(46, 18, 60, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 .auth-card h2 {
-    text-align: center;
-    margin-bottom: 28px;
-    color: var(--text-dark);
-    font-size: 22px;
-    font-weight: 800;
+    display: none;
 }
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 7px;
+    margin-bottom: 6px;
     font-weight: 700;
-    font-size: 13px;
-    color: var(--text-soft);
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .form-group input {
     width: 100%;
     height: 50px;
     border-radius: var(--radius-md);
-    border: 1.5px solid var(--border);
-    background: var(--bg-input);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
     padding: 0 15px;
     outline: none;
     font-size: 14.5px;
-    color: var(--text-dark);
+    color: white;
     transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
 
 .form-group input::placeholder {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .form-group input:focus {
-    border-color: var(--primary);
-    background: var(--white);
+    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.22);
 }
 
 .checkbox-label {
@@ -211,31 +191,57 @@ a {
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    font-size: 14px;
-    color: var(--text-soft);
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.85);
     cursor: pointer;
 }
 
 .checkbox-label input[type="checkbox"] {
     width: 17px;
     height: 17px;
+    accent-color: white;
 }
 
 .auth-switch {
     text-align: center;
     margin-top: 20px;
-    color: var(--text-soft);
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13.5px;
 }
 
 .auth-switch a {
-    color: var(--primary);
-    font-weight: 700;
-    text-decoration: none;
+    color: white;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 .auth-switch a:hover {
-    text-decoration: underline;
+    opacity: 0.85;
+}
+
+/* Register'daki "Hesap Türü" seçici (.filter-tab'ı yeniden kullanıyor) cam
+   temaya uysun diye - auth-card içindeyken override edilir. */
+.auth-card .filter-tab {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.auth-card .filter-tab.active {
+    background: rgba(255, 255, 255, 0.32);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.auth-card .primary-btn {
+    background: rgba(255, 255, 255, 0.22);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.03em;
+}
+
+.auth-card .primary-btn:hover {
+    background: rgba(255, 255, 255, 0.32);
 }
 
 /* GENERAL BUTTONS */
