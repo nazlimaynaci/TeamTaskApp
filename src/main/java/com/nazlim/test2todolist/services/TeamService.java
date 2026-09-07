@@ -19,4 +19,5 @@ public interface TeamService {
     List<UserSummaryResponse> getMyTeammates();
     List<TeamWorkloadResponse> getMyTeamsWorkload();
     WorkerDetailResponse getMemberDetail(Long workerId);
+    void rateMember(Long workerId, int rating);
 }

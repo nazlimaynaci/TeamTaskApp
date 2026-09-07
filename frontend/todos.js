@@ -78,6 +78,40 @@ function authFetch(url, options = {}) {
     });
 }
 
+// Yöneticinin çalışana verdiği 1-5 yıldızlık performans puanı. editable=true ise
+// (Ekiplerim kartı/detay modalı) yıldızlara tıklanınca puan güncellenir; workers
+// kendi puanını sadece okur (editable=false, onclick yok).
+function starsHtml(rating, workerId, editable) {
+    let html = '<div class="todo-meta">';
+    for (let i = 1; i <= 5; i++) {
+        const filled = rating && i <= rating;
+        const symbol = filled ? "⭐" : "☆";
+        html += editable
+            ? `<span onclick="event.stopPropagation(); rateMember(${workerId}, ${i})" style="cursor:pointer;font-size:18px">${symbol}</span>`
+            : `<span style="font-size:18px">${symbol}</span>`;
+    }
+    html += "</div>";
+    return html;
+}
+
+function rateMember(workerId, rating) {
+    authFetch(`${BASE_URL}/api/teams/members/${workerId}/rating`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating })
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Puan kaydedilemedi");
+        })
+        .catch(err => alert(err.message))
+        .finally(() => {
+            loadTeams();
+            if (currentMemberDetail === workerId) {
+                openMemberDetailModal(workerId);
+            }
+        });
+}
+
 function showRoleBadge() {
     const role = getRole();
     const badge = document.getElementById("roleBadge");
@@ -104,6 +138,12 @@ function loadMyProfile() {
             }
             el.textContent = text;
             el.style.display = "inline-block";
+
+            if (data.role === "WORKER" && data.performanceRating) {
+                const ratingEl = document.getElementById("myRating");
+                ratingEl.innerHTML = starsHtml(data.performanceRating, null, false);
+                ratingEl.style.display = "inline-block";
+            }
         })
         .catch(err => console.error(err));
 }
@@ -521,6 +561,7 @@ function renderTeamsPanel(teamsData) {
                         <div class="todo-content">
                             <div class="todo-title">🧑‍💻 ${m.fullName}</div>
                             <div class="todo-desc">${m.username}</div>
+                            ${starsHtml(m.performanceRating, m.id, true)}
                         </div>
                     </div>
                     <div class="todo-actions">
@@ -1183,6 +1224,7 @@ function renderMemberDetail(data) {
             <span class="priority-badge status-approved">${data.completedTaskCount} tamamlandı</span>
             <span class="priority-badge priority-medium">${avgLabel}</span>
         </div>
+        ${starsHtml(data.performanceRating, data.id, true)}
 
         <h4>📋 Aktif Görevler</h4>
         <div class="todo-list">${activeTasksHtml}</div>

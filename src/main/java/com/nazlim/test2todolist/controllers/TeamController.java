@@ -1,6 +1,7 @@
 package com.nazlim.test2todolist.controllers;
 
 import com.nazlim.test2todolist.dto.MyTeamResponse;
+import com.nazlim.test2todolist.dto.RatingRequest;
 import com.nazlim.test2todolist.dto.TeamRequest;
 import com.nazlim.test2todolist.dto.TeamResponse;
 import com.nazlim.test2todolist.dto.TeamWorkloadResponse;
@@ -45,6 +46,11 @@ public class TeamController {
     @GetMapping("/members/{workerId}/detail")
     public WorkerDetailResponse getMemberDetail(@PathVariable Long workerId) {
         return service.getMemberDetail(workerId);
+    }
+
+    @PutMapping("/members/{workerId}/rating")
+    public void rateMember(@PathVariable Long workerId, @Valid @RequestBody RatingRequest req) {
+        service.rateMember(workerId, req.rating());
     }
 
     @PutMapping("/{teamId}/members/{workerId}")

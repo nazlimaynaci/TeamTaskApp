@@ -5,6 +5,7 @@ public record MyProfileResponse(
         String username,
         String role,
         String company,
-        String position
+        String position,
+        Integer performanceRating
 ) {
 }

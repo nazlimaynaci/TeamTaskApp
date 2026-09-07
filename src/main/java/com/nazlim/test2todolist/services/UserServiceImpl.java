@@ -26,7 +26,7 @@ public class UserServiceImpl implements UserService {
     public List<UserSummaryResponse> getWorkers() {
         return users.findByRole(Role.WORKER)
                 .stream()
-                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername(), u.getFullName()))
+                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername(), u.getFullName(), u.getPerformanceRating()))
                 .toList();
     }
 
@@ -34,14 +34,14 @@ public class UserServiceImpl implements UserService {
     public List<UserSummaryResponse> getUnassignedWorkers() {
         return users.findByRoleAndTeamIsNull(Role.WORKER)
                 .stream()
-                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername(), u.getFullName()))
+                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername(), u.getFullName(), u.getPerformanceRating()))
                 .toList();
     }
 
     @Override
     public MyProfileResponse getMyProfile() {
         AppUser user = getCurrentUser();
-        return new MyProfileResponse(user.getFullName(), user.getUsername(), user.getRole().name(), user.getCompany(), user.getPosition());
+        return new MyProfileResponse(user.getFullName(), user.getUsername(), user.getRole().name(), user.getCompany(), user.getPosition(), user.getPerformanceRating());
     }
 
     private AppUser getCurrentUser() {
