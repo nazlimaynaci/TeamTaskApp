@@ -34,14 +34,43 @@ window.onload = function () {
         loadTeams();
         loadInviteCodes();
         loadAssignedByMe();
+        authFetch(`${BASE_URL}/api/todos/assigned-by-me`).then(res => res.json()).then(checkDueToday).catch(err => console.error(err));
     } else {
         getTodos();
         loadMyTeam();
+        authFetch(`${BASE_URL}/api/todos`).then(res => res.json()).then(checkDueToday).catch(err => console.error(err));
     }
 
     loadNotifications();
     setInterval(loadNotifications, 30000);
 };
+
+// Sayfa açılır açılmaz, tam olarak bugün teslim tarihi olan (henüz tamamlanmamış)
+// görevler varsa bunları bir pop-up ile gösterir - yönetici kendi atadıklarına,
+// çalışan kendi görevlerine (kişisel + kendisine atanmış) bakar.
+function checkDueToday(tasks) {
+    const today = new Date().toISOString().split("T")[0];
+    const dueToday = tasks.filter(t => t.dueDate === today && !t.completed);
+
+    if (dueToday.length === 0) return;
+
+    document.getElementById("dueTodayList").innerHTML = dueToday.map(t => `
+        <div class="todo-card">
+            <div class="todo-content">
+                <div class="todo-title">${t.title || ""}</div>
+                ${t.description ? `<div class="todo-desc">${t.description}</div>` : ""}
+                ${priorityBadge(t)}
+                ${t.assigneeUsername ? `<div class="todo-meta"><span class="priority-badge status-progress">🧑‍💻 ${t.assigneeUsername}</span></div>` : ""}
+            </div>
+        </div>
+    `).join("");
+
+    document.getElementById("dueTodayModal").style.display = "block";
+}
+
+function closeDueTodayModal() {
+    document.getElementById("dueTodayModal").style.display = "none";
+}
 
 // "Beni hatırla" işaretliyse token localStorage'da, değilse sessionStorage'da durur;
 // ikisine de bakıp hangisinde varsa onu kullanıyoruz.
