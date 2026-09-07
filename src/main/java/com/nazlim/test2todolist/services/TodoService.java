@@ -24,6 +24,7 @@ public interface TodoService {
     List<TodoResponse> getByApprovalStatus(String status);
     TodoResponse approve(Long id);
     TodoResponse reject(Long id, RejectTodoRequest request);
+    TodoResponse rateTodo(Long id, int rating);
 
     List<TodoHistoryResponse> getMyHistory();
 

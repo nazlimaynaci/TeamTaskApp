@@ -39,8 +39,6 @@ public class AppUser {
     @JoinColumn(name = "team_id", nullable = true)
     private Team team;
 
-    private Integer performanceRating;
-
     @OneToMany(mappedBy = "user")
     private List<Todo> todos;
 
@@ -130,13 +128,5 @@ public class AppUser {
 
     public void setTeam(Team team) {
         this.team = team;
-    }
-
-    public Integer getPerformanceRating() {
-        return performanceRating;
-    }
-
-    public void setPerformanceRating(Integer performanceRating) {
-        this.performanceRating = performanceRating;
     }
 }

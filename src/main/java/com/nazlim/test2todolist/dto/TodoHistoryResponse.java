@@ -10,6 +10,7 @@ public record TodoHistoryResponse(
         LocalDate dueDate,
         Instant completedAt,
         Long durationDays,
-        String assignedByName
+        String assignedByName,
+        Integer performanceRating
 ) {
 }

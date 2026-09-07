@@ -51,6 +51,8 @@ public class Todo {
 
     private Instant completedAt;
 
+    private Integer performanceRating;
+
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
         this.title = title;
@@ -158,5 +160,13 @@ public class Todo {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Integer getPerformanceRating() {
+        return performanceRating;
+    }
+
+    public void setPerformanceRating(Integer performanceRating) {
+        this.performanceRating = performanceRating;
     }
 }

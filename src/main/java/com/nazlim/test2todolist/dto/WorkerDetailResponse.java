@@ -11,7 +11,7 @@ public record WorkerDetailResponse(
         String position,
         long completedTaskCount,
         Double avgCompletionDays,
-        Integer performanceRating,
+        Double avgRating,
         List<TodoResponse> activeTasks,
         List<TodoHistoryResponse> completedTasks
 ) {

@@ -78,24 +78,35 @@ function authFetch(url, options = {}) {
     });
 }
 
-// Yöneticinin çalışana verdiği 1-5 yıldızlık performans puanı. editable=true ise
-// (Ekiplerim kartı/detay modalı) yıldızlara tıklanınca puan güncellenir; workers
-// kendi puanını sadece okur (editable=false, onclick yok).
-function starsHtml(rating, workerId, editable) {
+// Salt okunur yıldız gösterimi - bir çalışanın genel KPI'sı (onaylanmış görevlerine
+// verilen puanların ortalaması) için kullanılır. rating küsüratlı olabileceğinden
+// en yakın tam sayıya yuvarlanarak gösterilir.
+function starsHtml(rating) {
+    if (rating == null) return "";
+
+    const rounded = Math.round(rating);
     let html = '<div class="todo-meta">';
     for (let i = 1; i <= 5; i++) {
-        const filled = rating && i <= rating;
-        const symbol = filled ? "⭐" : "☆";
-        html += editable
-            ? `<span onclick="event.stopPropagation(); rateMember(${workerId}, ${i})" style="cursor:pointer;font-size:18px">${symbol}</span>`
-            : `<span style="font-size:18px">${symbol}</span>`;
+        html += `<span style="font-size:18px">${i <= rounded ? "⭐" : "☆"}</span>`;
     }
     html += "</div>";
     return html;
 }
 
-function rateMember(workerId, rating) {
-    authFetch(`${BASE_URL}/api/teams/members/${workerId}/rating`, {
+// Yöneticinin, tamamlanıp onaylanmış BİR göreve verdiği puan - tıklanabilir.
+// Çalışanın genel KPI'sı bu görev puanlarının ortalamasından hesaplanıyor.
+function taskStarsHtml(rating, todoId) {
+    let html = '<div class="todo-meta">';
+    for (let i = 1; i <= 5; i++) {
+        const filled = rating && i <= rating;
+        html += `<span onclick="event.stopPropagation(); rateTodo(${todoId}, ${i})" style="cursor:pointer;font-size:18px">${filled ? "⭐" : "☆"}</span>`;
+    }
+    html += "</div>";
+    return html;
+}
+
+function rateTodo(todoId, rating) {
+    authFetch(`${BASE_URL}/api/todos/${todoId}/rating`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating })
@@ -106,8 +117,8 @@ function rateMember(workerId, rating) {
         .catch(err => alert(err.message))
         .finally(() => {
             loadTeams();
-            if (currentMemberDetail === workerId) {
-                openMemberDetailModal(workerId);
+            if (currentMemberDetail) {
+                openMemberDetailModal(currentMemberDetail);
             }
         });
 }
@@ -139,9 +150,9 @@ function loadMyProfile() {
             el.textContent = text;
             el.style.display = "inline-block";
 
-            if (data.role === "WORKER" && data.performanceRating) {
+            if (data.role === "WORKER" && data.avgRating != null) {
                 const ratingEl = document.getElementById("myRating");
-                ratingEl.innerHTML = starsHtml(data.performanceRating, null, false);
+                ratingEl.innerHTML = starsHtml(data.avgRating);
                 ratingEl.style.display = "inline-block";
             }
         })
@@ -348,6 +359,7 @@ function renderMyHistory(history) {
                     <span class="priority-badge status-approved">⏱️ ${duration}</span>
                     <span class="todo-date">${date}</span>
                 </div>
+                ${starsHtml(item.performanceRating)}
             </div>
         </div>
         `;
@@ -561,7 +573,7 @@ function renderTeamsPanel(teamsData) {
                         <div class="todo-content">
                             <div class="todo-title">🧑‍💻 ${m.fullName}</div>
                             <div class="todo-desc">${m.username}</div>
-                            ${starsHtml(m.performanceRating, m.id, true)}
+                            ${starsHtml(m.avgRating)}
                         </div>
                     </div>
                     <div class="todo-actions">
@@ -1209,6 +1221,7 @@ function renderMemberDetail(data) {
                             <span class="priority-badge status-approved">⏱️ ${duration}</span>
                             <span class="todo-date">${date}</span>
                         </div>
+                        ${taskStarsHtml(t.performanceRating, t.id)}
                     </div>
                 </div>
             `;
@@ -1224,12 +1237,12 @@ function renderMemberDetail(data) {
             <span class="priority-badge status-approved">${data.completedTaskCount} tamamlandı</span>
             <span class="priority-badge priority-medium">${avgLabel}</span>
         </div>
-        ${starsHtml(data.performanceRating, data.id, true)}
+        ${starsHtml(data.avgRating)}
 
         <h4>📋 Aktif Görevler</h4>
         <div class="todo-list">${activeTasksHtml}</div>
 
-        <h4>✅ Tamamlanan Görevler</h4>
+        <h4>✅ Tamamlanan Görevler (görevlere puan verebilirsin)</h4>
         <div class="todo-list">${completedTasksHtml}</div>
     `;
 }

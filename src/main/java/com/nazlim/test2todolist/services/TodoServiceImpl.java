@@ -270,6 +270,23 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
+    public TodoResponse rateTodo(Long id, int rating) {
+        AppUser manager = getCurrentUser();
+
+        Todo todo = repo.findByIdAndAssignedBy(id, manager)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı"));
+
+        if (todo.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sadece onaylanmış görevler puanlanabilir");
+        }
+
+        todo.setPerformanceRating(rating);
+
+        Todo saved = repo.save(todo);
+        return TodoMapper.toResponse(saved);
+    }
+
+    @Override
     public List<TodoLogEntryResponse> getLog(Long todoId) {
         AppUser currentUser = getCurrentUser();
         Todo todo = getAccessibleTodo(todoId, currentUser);

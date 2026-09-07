@@ -133,7 +133,7 @@ public class TeamServiceImpl implements TeamService {
 
         return team.getMembers().stream()
                 .filter(m -> !m.getId().equals(worker.getId()))
-                .map(m -> new UserSummaryResponse(m.getId(), m.getUsername(), m.getFullName(), m.getPerformanceRating()))
+                .map(m -> new UserSummaryResponse(m.getId(), m.getUsername(), m.getFullName(), avgRatingFor(m)))
                 .toList();
     }
 
@@ -199,25 +199,17 @@ public class TeamServiceImpl implements TeamService {
                 worker.getPosition(),
                 completedTasks.size(),
                 averageDurationDays(completedTasks),
-                worker.getPerformanceRating(),
+                avgRatingFor(worker),
                 activeTasks.stream().map(TodoMapper::toResponse).toList(),
                 history
         );
     }
 
-    @Override
-    public void rateMember(Long workerId, int rating) {
-        AppUser manager = getCurrentUser();
-
-        AppUser worker = users.findById(workerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
-
-        if (worker.getTeam() == null || !worker.getTeam().getManager().getId().equals(manager.getId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı");
-        }
-
-        worker.setPerformanceRating(rating);
-        users.save(worker);
+    // Bir çalışanın genel KPI'sı: manager'ın onayladığı görevlere verdiği puanların
+    // ortalaması. Manager tek tek çalışana değil, her göreve ayrı puan veriyor
+    // (bkz. TodoServiceImpl.rateTodo) - burada sadece o puanların ortalamasını alıyoruz.
+    private Double avgRatingFor(AppUser user) {
+        return TodoMapper.averageRating(todos.findByUserAndPerformanceRatingIsNotNull(user));
     }
 
     private Double averageDurationDays(List<Todo> completedTasks) {
@@ -241,7 +233,7 @@ public class TeamServiceImpl implements TeamService {
     private TeamResponse toResponse(Team team) {
         List<UserSummaryResponse> members = team.getMembers() == null ? List.of() :
                 team.getMembers().stream()
-                        .map(m -> new UserSummaryResponse(m.getId(), m.getUsername(), m.getFullName(), m.getPerformanceRating()))
+                        .map(m -> new UserSummaryResponse(m.getId(), m.getUsername(), m.getFullName(), avgRatingFor(m)))
                         .toList();
         return new TeamResponse(team.getId(), team.getName(), members);
     }

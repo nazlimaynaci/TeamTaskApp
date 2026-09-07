@@ -8,6 +8,7 @@ import com.nazlim.test2todolist.entity.Todo;
 import com.nazlim.test2todolist.entity.TodoLogEntry;
 
 import java.time.Duration;
+import java.util.List;
 
 public class TodoMapper {
 
@@ -35,7 +36,8 @@ public class TodoMapper {
                 assignedByUsername,
                 assigneeUsername,
                 todo.getApprovalStatus().name(),
-                todo.getRejectionReason()
+                todo.getRejectionReason(),
+                todo.getPerformanceRating()
         );
     }
 
@@ -52,8 +54,24 @@ public class TodoMapper {
                 todo.getDueDate(),
                 todo.getCompletedAt(),
                 durationDays,
-                assignedByName
+                assignedByName,
+                todo.getPerformanceRating()
         );
+    }
+
+    // Bir çalışanın genel performans puanı - manager'ın onayladığı görevlere verdiği
+    // puanların ortalaması. Hiç puanlanmış görevi yoksa null döner (henüz KPI'sı yok).
+    public static Double averageRating(List<Todo> ratedTasks) {
+        List<Integer> ratings = ratedTasks.stream()
+                .map(Todo::getPerformanceRating)
+                .filter(r -> r != null)
+                .toList();
+
+        if (ratings.isEmpty()) {
+            return null;
+        }
+
+        return ratings.stream().mapToInt(Integer::intValue).average().orElse(0);
     }
 
     public static TodoLogEntryResponse toLogResponse(TodoLogEntry entry) {
