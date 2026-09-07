@@ -82,7 +82,7 @@ a {
 /* AUTH PAGES */
 .auth-body {
     min-height: 100vh;
-    background: var(--bg-main);
+    background: radial-gradient(circle at 15% 15%, var(--primary-tint), var(--bg-main) 55%);
 }
 
 .auth-page {
@@ -90,12 +90,25 @@ a {
 }
 
 .auth-top {
-    height: 240px;
+    height: 220px;
     position: relative;
-    background: var(--primary);
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.auth-logo {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
 }
 
 .auth-header {
@@ -106,25 +119,42 @@ a {
 }
 
 .auth-header h1 {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .auth-header p {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
     opacity: 0.9;
 }
 
 .auth-circle {
-    display: none;
+    display: block;
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-circle-left {
+    width: 200px;
+    height: 200px;
+    top: -80px;
+    left: -60px;
+}
+
+.auth-circle-right {
+    width: 260px;
+    height: 260px;
+    bottom: -140px;
+    right: -80px;
 }
 
 .auth-card {
     width: 100%;
     max-width: 420px;
-    margin: -64px auto 40px;
+    margin: -48px auto 40px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
@@ -639,6 +669,44 @@ a {
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+/* Yönetici ekranlarındaki liste liste alt alta dizilmesin diye: ekipler,
+   iş yükü, davet kodları ve atadıklarım kartları yan yana bir ızgarada akar. */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-items: start;
+    gap: 16px;
+}
+
+.card-grid > .todo-card,
+.card-grid > .team-card {
+    height: 100%;
+}
+
+/* Tıklayınca açılıp kapanan kart başlığı (ekipler, iş yükü üyeleri). */
+.card-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.card-chevron {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform 0.15s var(--ease);
+    flex-shrink: 0;
+}
+
+.card-chevron.open {
+    transform: rotate(180deg);
+}
+
+.card-body {
+    margin-top: 14px;
 }
 
 .todo-card {

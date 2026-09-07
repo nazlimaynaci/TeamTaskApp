@@ -503,17 +503,23 @@ function renderWorkload(teamsData) {
                     `).join("")}</div>`
                     : "<p>Açık görevi yok.</p>";
 
+                const memberKey = `member-${team.teamId}-${m.id}`;
                 return `
                     <div class="todo-card">
                         <div class="todo-content">
-                            <div class="todo-title">🧑‍💻 ${m.fullName}</div>
+                            <div class="card-toggle" onclick="toggleCardBody('${memberKey}')">
+                                <div class="todo-title">🧑‍💻 ${m.fullName}</div>
+                                <span class="card-chevron" id="chevron-${memberKey}">▾</span>
+                            </div>
                             <div class="todo-meta">
                                 <span class="priority-badge priority-medium">${m.openTaskCount} açık görev</span>
                                 ${m.pendingApprovalCount > 0 ? `<span class="priority-badge status-pending">${m.pendingApprovalCount} onay bekliyor</span>` : ""}
                                 <span class="priority-badge status-approved">${m.completedTaskCount} tamamlandı</span>
                                 <span class="priority-badge status-progress">${avgLabel}</span>
                             </div>
-                            ${activeTasksHtml}
+                            <div id="cardBody-${memberKey}" class="card-body" style="display:none">
+                                ${activeTasksHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -631,12 +637,20 @@ function renderTeamsPanel(teamsData) {
         container.innerHTML += `
             <div class="todo-card team-card">
                 <div class="todo-content">
-                    <div class="todo-title">${team.name}</div>
-                    ${membersHtml}
-                    <div class="task-row">
-                        <select id="unassignedSelect-${team.id}" class="soft-input flex-grow"></select>
-                        <button class="primary-btn" onclick="addTeamMember(${team.id})">+ Ekle</button>
-                        <button class="secondary-btn" onclick="deleteTeam(${team.id})">🗑️ Ekibi Sil</button>
+                    <div class="card-toggle" onclick="toggleCardBody('team-${team.id}')">
+                        <div class="todo-title">${team.name}</div>
+                        <div class="todo-meta">
+                            <span class="priority-badge priority-low">${team.members.length} üye</span>
+                            <span class="card-chevron" id="chevron-team-${team.id}">▾</span>
+                        </div>
+                    </div>
+                    <div id="cardBody-team-${team.id}" class="card-body" style="display:none">
+                        ${membersHtml}
+                        <div class="task-row">
+                            <select id="unassignedSelect-${team.id}" class="soft-input flex-grow"></select>
+                            <button class="primary-btn" onclick="addTeamMember(${team.id})">+ Ekle</button>
+                            <button class="secondary-btn" onclick="deleteTeam(${team.id})">🗑️ Ekibi Sil</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -644,6 +658,18 @@ function renderTeamsPanel(teamsData) {
     });
 
     fillUnassignedSelects(teamsData);
+}
+
+// Kutucuk kartlarının (ekip, iş yükü üyesi vb.) tıklayınca açılıp kapanması için
+// paylaşılan yardımcı - key her kart için benzersiz bir string (örn. "team-3").
+function toggleCardBody(key) {
+    const body = document.getElementById(`cardBody-${key}`);
+    const chevron = document.getElementById(`chevron-${key}`);
+    if (!body) return;
+
+    const isOpen = body.style.display !== "none";
+    body.style.display = isOpen ? "none" : "block";
+    if (chevron) chevron.classList.toggle("open", !isOpen);
 }
 
 // Her ekip kartındaki "ekle" dropdown'ını, o ekipte HENÜZ olmayan çalışanlarla

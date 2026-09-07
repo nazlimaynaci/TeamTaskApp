@@ -82,7 +82,7 @@
                     <button class="filter-tab" data-view="calendar" onclick="setAssignedView('calendar')">🗓️ Takvim</button>
                 </div>
 
-                <div id="assignedByMeList" class="todo-list"></div>
+                <div id="assignedByMeList" class="todo-list card-grid"></div>
                 <div id="assignedCalendar" style="display:none"></div>
             </section>
         </div>
@@ -92,7 +92,7 @@
                 <div class="section-head">
                     <h2>📊 Ekip İş Yükü</h2>
                 </div>
-                <div id="workloadList" class="todo-list"></div>
+                <div id="workloadList" class="todo-list card-grid"></div>
             </section>
         </div>
 
@@ -105,7 +105,7 @@
                     <input type="text" id="newTeamName" class="soft-input flex-grow" placeholder="Yeni ekip adı">
                     <button class="primary-btn" onclick="createTeam()">Ekip Oluştur</button>
                 </div>
-                <div id="teamsList" class="todo-list"></div>
+                <div id="teamsList" class="todo-list card-grid"></div>
             </section>
         </div>
 
@@ -117,7 +117,7 @@
                 <div class="task-row">
                     <button class="primary-btn" onclick="generateInviteCode()">+ Yeni Kod Üret</button>
                 </div>
-                <div id="inviteCodesList" class="todo-list"></div>
+                <div id="inviteCodesList" class="todo-list card-grid"></div>
             </section>
         </div>
 
