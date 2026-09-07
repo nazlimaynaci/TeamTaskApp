@@ -251,51 +251,191 @@ a {
     margin-top: 10px;
 }
 
-/* TODO PAGE */
+/* TODO PAGE — sidebar app shell */
 .page-shell {
     min-height: 100vh;
     background: var(--bg-main);
 }
 
-.hero {
-    position: relative;
-    height: 260px;
-    background: var(--primary);
-    overflow: hidden;
+.app-shell {
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
 }
 
-.hero-topbar {
-    position: absolute;
-    top: 22px;
-    right: 24px;
-    z-index: 3;
+/* ---- Sidebar ---- */
+.sidebar {
+    width: 272px;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar-brand {
     display: flex;
     align-items: center;
     gap: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text-dark);
+    margin-bottom: 26px;
+    padding: 0 6px;
+}
+
+.sidebar-brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.sidebar-user {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: 16px 12px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+}
+
+.user-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    background: var(--primary-tint);
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.sidebar-user .user-name {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text-dark);
+}
+
+.sidebar-user .team-info {
+    background: var(--bg-input);
+    color: var(--text-soft);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0;
+}
+
+#teamInfo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-nav-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 12px 10px 6px;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+}
+
+/* Sidebar reuses .tab-btn / .filter-tab / .filter-tabs (shared JS-driven classes)
+   but laid out as a vertical nav instead of a horizontal pill bar. */
+.sidebar-nav .tab-bar,
+.sidebar-nav .filter-tabs {
+    flex-direction: column;
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    gap: 2px;
+}
+
+.sidebar-nav .tab-btn,
+.sidebar-nav .filter-tab {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--text-soft);
+}
+
+.sidebar-nav .tab-btn:hover,
+.sidebar-nav .filter-tab:hover {
+    background: var(--bg-input);
+    color: var(--text-dark);
+    border-color: transparent;
+}
+
+.sidebar-nav .tab-btn.active,
+.sidebar-nav .filter-tab.active {
+    background: var(--primary-tint);
+    color: var(--primary-dark);
+    border-left: 3px solid var(--primary);
+    padding-left: 9px;
 }
 
 .logout-icon-btn {
     position: relative;
     border: none;
-    padding: 10px 16px;
+    padding: 10px 14px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.16);
-    color: white;
+    background: var(--bg-input);
+    color: var(--text-dark);
     font-weight: 700;
-    font-size: 13.5px;
+    font-size: 13px;
     cursor: pointer;
     transition: background 0.15s var(--ease);
 }
 
 .logout-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: var(--border);
 }
 
 .notif-count {
     position: absolute;
     top: -6px;
     right: -6px;
-    background: var(--text-dark);
+    background: var(--primary);
     color: white;
     border-radius: 999px;
     font-size: 10.5px;
@@ -308,49 +448,24 @@ a {
     padding: 0 4px;
 }
 
-.hero-content {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-align: center;
-}
-
-.hero-content h1 {
-    font-size: 40px;
-    font-weight: 800;
-    margin-bottom: 8px;
-}
-
-.hero-content p {
-    font-size: 15.5px;
-    font-weight: 500;
-    opacity: 0.9;
-}
-
 .team-info {
-    margin-top: 14px;
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--bg-input);
     padding: 8px 16px;
     border-radius: 999px;
     font-size: 13px;
     font-weight: 700;
 }
 
-.hero-circle {
-    display: none;
+/* ---- Main content ---- */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 36px 40px 60px;
 }
 
 .content-area {
-    max-width: 1080px;
-    margin: -36px auto 40px;
-    padding: 0 20px;
-    position: relative;
-    z-index: 5;
+    max-width: 980px;
+    margin: 0 auto;
 }
 
 .tab-bar {
@@ -368,6 +483,9 @@ a {
 .tab-btn {
     flex: 1;
     min-width: 130px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     border: none;
     background: transparent;
     color: var(--text-soft);
@@ -882,14 +1000,77 @@ a {
 }
 
 @media (max-width: 768px) {
-    .hero-content h1,
     .auth-header h1 {
         font-size: 30px;
     }
 
-    .hero-content p,
     .auth-header p {
         font-size: 14px;
+    }
+
+    .app-shell {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+    }
+
+    .sidebar-brand {
+        margin-bottom: 0;
+    }
+
+    .sidebar-user {
+        flex-direction: row;
+        border-bottom: none;
+        padding: 0;
+        margin-bottom: 0;
+        gap: 10px;
+    }
+
+    .user-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    .sidebar-user .user-name {
+        font-size: 13px;
+    }
+
+    .sidebar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+
+    .sidebar-nav .tab-bar,
+    .sidebar-nav .filter-tabs {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .sidebar-nav .tab-btn,
+    .sidebar-nav .filter-tab {
+        width: auto;
+    }
+
+    .sidebar-footer {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+
+    .main-content {
+        padding: 20px 16px 40px;
     }
 
     .task-row {

@@ -12,35 +12,45 @@
 </head>
 <body>
 
-<div class="page-shell">
+<div class="app-shell">
 
-    <header class="hero">
-        <div class="hero-circle hero-circle-left"></div>
-        <div class="hero-circle hero-circle-right"></div>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="sidebar-brand-mark">📋</span>
+            Task Manager
+        </div>
 
-        <div class="hero-topbar">
+        <div class="sidebar-user">
+            <div id="userAvatar" class="user-avatar"></div>
+            <div id="profileInfo" class="user-name" style="display:none"></div>
             <span id="roleBadge" class="priority-badge"></span>
-            <button class="logout-icon-btn" onclick="toggleNotifications()">🔔<span id="notifBadge" class="notif-count" style="display:none"></span></button>
+            <div id="teamInfo" style="display:none"></div>
+            <div id="myRating" style="display:none"></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div id="managerTabs" class="tab-bar" style="display:none">
+                <button class="tab-btn active" data-tab="tasks" onclick="setManagerTab('tasks')">📋 Görevler</button>
+                <button class="tab-btn" data-tab="workload" onclick="setManagerTab('workload')">📊 İş Yükü</button>
+                <button class="tab-btn" data-tab="teams" onclick="setManagerTab('teams')">🧑‍🤝‍🧑 Ekiplerim</button>
+                <button class="tab-btn" data-tab="invites" onclick="setManagerTab('invites')">🎟️ Davet Kodları</button>
+            </div>
+
+            <div id="workerNav" class="filter-tabs">
+                <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">🗂️ Tümü</button>
+                <button class="filter-tab" data-filter="active" onclick="setFilter('active')">⚡ Aktif</button>
+                <button class="filter-tab" data-filter="completed" onclick="setFilter('completed')">📁 Tamamlanan Projelerim</button>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-icon-btn" onclick="toggleNotifications()" style="flex:1">🔔 Bildirimler<span id="notifBadge" class="notif-count" style="display:none"></span></button>
             <button class="logout-icon-btn" onclick="logout()">Çıkış</button>
         </div>
+    </aside>
 
-        <div class="hero-content">
-            <h1>Task Manager 📋</h1>
-            <p>Görevlerini düzenli ve şık bir şekilde yönet</p>
-            <div id="profileInfo" class="team-info" style="display:none"></div>
-            <div id="teamInfo" style="display:none"></div>
-            <div id="myRating" class="team-info" style="display:none"></div>
-        </div>
-    </header>
-
-    <main class="content-area">
-
-        <div id="managerTabs" class="tab-bar" style="display:none">
-            <button class="tab-btn active" data-tab="tasks" onclick="setManagerTab('tasks')">📋 Görevler</button>
-            <button class="tab-btn" data-tab="workload" onclick="setManagerTab('workload')">📊 İş Yükü</button>
-            <button class="tab-btn" data-tab="teams" onclick="setManagerTab('teams')">🧑‍🤝‍🧑 Ekiplerim</button>
-            <button class="tab-btn" data-tab="invites" onclick="setManagerTab('invites')">🎟️ Davet Kodları</button>
-        </div>
+    <main class="main-content">
+      <div class="content-area">
 
         <div id="tabGroup-tasks" class="tab-group">
             <section id="managerAssignPanel" class="task-panel" style="display:none">
@@ -132,12 +142,6 @@
                 <button class="secondary-btn" onclick="deleteCompletedPersonal()">🗑️ Tamamlananları Sil</button>
             </div>
 
-            <div class="filter-tabs">
-                <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">Tümü</button>
-                <button class="filter-tab" data-filter="active" onclick="setFilter('active')">Aktif</button>
-                <button class="filter-tab" data-filter="completed" onclick="setFilter('completed')">📁Tamamlanan Projelerim</button>
-            </div>
-
             <div id="personalViewToggle" class="filter-tabs view-toggle">
                 <button class="filter-tab active" data-view="list" onclick="setPersonalView('list')">📋 Liste</button>
                 <button class="filter-tab" data-view="calendar" onclick="setPersonalView('calendar')">🗓️ Takvim</button>
@@ -147,6 +151,7 @@
             <div id="personalCalendar" style="display:none"></div>
         </section>
 
+      </div>
     </main>
 </div>
 

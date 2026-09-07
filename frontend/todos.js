@@ -30,6 +30,7 @@ window.onload = function () {
         document.getElementById("assignedByMeSection").style.display = "block";
         document.getElementById("personalTaskPanel").style.display = "none";
         document.getElementById("personalTodoSection").style.display = "none";
+        document.getElementById("workerNav").style.display = "none";
         loadWorkload();
         loadTeams();
         loadInviteCodes();
@@ -171,21 +172,32 @@ function loadMyProfile() {
     authFetch(`${BASE_URL}/api/users/me`)
         .then(res => res.json())
         .then(data => {
+            document.getElementById("userAvatar").textContent = initialsOf(data.fullName);
+
             const el = document.getElementById("profileInfo");
-            let text = `👤 ${data.fullName}`;
+            let text = data.fullName || "";
             if (data.company) {
                 text += ` · 🏢 ${data.company}`;
             }
             el.textContent = text;
-            el.style.display = "inline-block";
+            el.style.display = "block";
 
             if (data.role === "WORKER" && data.avgRating != null) {
                 const ratingEl = document.getElementById("myRating");
                 ratingEl.innerHTML = starsHtml(data.avgRating);
-                ratingEl.style.display = "inline-block";
+                ratingEl.style.display = "block";
             }
         })
         .catch(err => console.error(err));
+}
+
+// Sidebar'daki avatar dairesine koymak için ad-soyaddan baş harfleri çıkarır
+// ("nazlım aynacı" -> "NA"). İsim yoksa/tek kelimeyse elden geldiğince baş harf üretir.
+function initialsOf(fullName) {
+    if (!fullName) return "?";
+    const parts = fullName.trim().split(/\s+/);
+    const initials = parts.slice(0, 2).map(p => p[0]).join("");
+    return initials.toUpperCase();
 }
 
 // Sadece çalışan rolündeki kullanıcı için: üye olduğu TÜM ekipleri ve her birinin
