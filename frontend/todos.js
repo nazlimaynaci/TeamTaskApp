@@ -35,10 +35,8 @@ window.onload = function () {
         loadInviteCodes();
         loadAssignedByMe();
     } else {
-        document.getElementById("myHistorySection").style.display = "block";
         getTodos();
         loadMyTeam();
-        loadMyHistory();
     }
 
     loadNotifications();
@@ -202,6 +200,11 @@ function addTodo() {
 }
 
 function getTodos() {
+    if (currentFilter === "completed" && personalViewMode === "list") {
+        loadMyHistory();
+        return;
+    }
+
     authFetch(`${BASE_URL}/api/todos`)
         .then(res => {
             if (!res.ok) {
@@ -272,9 +275,9 @@ function renderPersonalCalendar(todos) {
     });
 }
 
-// Çalışanın kendi tamamladığı görevlerin (kişisel + yönetici onaylı) geçmişi,
-// her biri kaç günde bitirildiği bilgisiyle birlikte. Bu alanlar sadece bundan
-// sonra tamamlanan görevlerde dolu olacağı için eski kayıtlarda süre "–" gösterilir.
+// "Projelerim" sekmesi: çalışanın kendi tamamladığı görevlerin (kişisel + yönetici
+// onaylı) geçmişi, her biri kaç günde bitirildiği bilgisiyle birlikte. Bu alanlar
+// sadece bundan sonra tamamlanan görevlerde dolu olacağı için eski kayıtlarda süre "–" gösterilir.
 function loadMyHistory() {
     authFetch(`${BASE_URL}/api/todos/history`)
         .then(res => res.json())
@@ -283,7 +286,7 @@ function loadMyHistory() {
 }
 
 function renderMyHistory(history) {
-    const list = document.getElementById("myHistoryList");
+    const list = document.getElementById("todoList");
     list.innerHTML = "";
 
     if (history.length === 0) {
@@ -512,19 +515,26 @@ function renderTeamsPanel(teamsData) {
 
     teamsData.forEach(team => {
         const membersHtml = team.members.length
-            ? team.members.map(m => `
-                <span class="member-chip" onclick="openMemberDetailModal(${m.id})" style="cursor:pointer">
-                    🧑‍💻 ${m.fullName}
-                    <button class="chip-remove" onclick="event.stopPropagation(); removeTeamMember(${team.id}, ${m.id})">❌</button>
-                </span>
-            `).join("")
-            : "<span>Henüz üye yok</span>";
+            ? `<div class="todo-list">${team.members.map(m => `
+                <div class="todo-card" onclick="openMemberDetailModal(${m.id})" style="cursor:pointer">
+                    <div class="todo-left">
+                        <div class="todo-content">
+                            <div class="todo-title">🧑‍💻 ${m.fullName}</div>
+                            <div class="todo-desc">${m.username}</div>
+                        </div>
+                    </div>
+                    <div class="todo-actions">
+                        <button class="icon-btn" title="Ekipten çıkar" onclick="event.stopPropagation(); removeTeamMember(${team.id}, ${m.id})">🗑️</button>
+                    </div>
+                </div>
+            `).join("")}</div>`
+            : "<p>Henüz üye yok</p>";
 
         container.innerHTML += `
             <div class="todo-card team-card">
                 <div class="todo-content">
                     <div class="todo-title">${team.name}</div>
-                    <div class="todo-meta">${membersHtml}</div>
+                    ${membersHtml}
                     <div class="task-row">
                         <select id="unassignedSelect-${team.id}" class="soft-input flex-grow"></select>
                         <button class="primary-btn" onclick="addTeamMember(${team.id})">+ Ekle</button>
