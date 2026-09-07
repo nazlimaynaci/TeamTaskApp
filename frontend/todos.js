@@ -35,8 +35,10 @@ window.onload = function () {
         loadInviteCodes();
         loadAssignedByMe();
     } else {
+        document.getElementById("myHistorySection").style.display = "block";
         getTodos();
         loadMyTeam();
+        loadMyHistory();
     }
 
     loadNotifications();
@@ -270,6 +272,45 @@ function renderPersonalCalendar(todos) {
     });
 }
 
+// Çalışanın kendi tamamladığı görevlerin (kişisel + yönetici onaylı) geçmişi,
+// her biri kaç günde bitirildiği bilgisiyle birlikte. Bu alanlar sadece bundan
+// sonra tamamlanan görevlerde dolu olacağı için eski kayıtlarda süre "–" gösterilir.
+function loadMyHistory() {
+    authFetch(`${BASE_URL}/api/todos/history`)
+        .then(res => res.json())
+        .then(data => renderMyHistory(data))
+        .catch(err => console.error(err));
+}
+
+function renderMyHistory(history) {
+    const list = document.getElementById("myHistoryList");
+    list.innerHTML = "";
+
+    if (history.length === 0) {
+        list.innerHTML = "<p>Henüz tamamlanmış bir görevin yok.</p>";
+        return;
+    }
+
+    history.forEach(item => {
+        const date = item.completedAt ? new Date(item.completedAt).toLocaleString("tr-TR") : "-";
+        const duration = item.durationDays != null ? `${item.durationDays} gün` : "–";
+
+        list.innerHTML += `
+        <div class="todo-card">
+            <div class="todo-content">
+                <div class="todo-title completed">${item.title || ""}</div>
+                <div class="todo-meta">
+                    <span class="priority-badge status-progress">${item.assignedByName ? `👔 ${item.assignedByName}` : "🙋 Kişisel"}</span>
+                    ${priorityBadge(item)}
+                    <span class="priority-badge status-approved">⏱️ ${duration}</span>
+                    <span class="todo-date">${date}</span>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+}
+
 function dueDateBadge(todo) {
     if (!todo.dueDate) return "";
 
@@ -346,13 +387,37 @@ function renderWorkload(teamsData) {
 
     teamsData.forEach(team => {
         const rows = team.members.length
-            ? team.members.map(m => `
-                <div class="todo-meta">
-                    <span class="priority-badge status-progress">🧑‍💻 ${m.fullName}</span>
-                    <span class="priority-badge priority-medium">${m.openTaskCount} açık görev</span>
-                    ${m.pendingApprovalCount > 0 ? `<span class="priority-badge status-pending">${m.pendingApprovalCount} onay bekliyor</span>` : ""}
-                </div>
-            `).join("")
+            ? team.members.map(m => {
+                const avgLabel = m.avgCompletionDays != null
+                    ? `~${Math.round(m.avgCompletionDays)} gün ort.`
+                    : "–";
+                const activeTasksHtml = m.activeTasks && m.activeTasks.length
+                    ? `<div class="todo-list">${m.activeTasks.map(t => `
+                        <div class="todo-card">
+                            <div class="todo-content">
+                                <div class="todo-title">${t.title || ""}</div>
+                                ${dueDateBadge(t)}
+                                ${priorityBadge(t)}
+                            </div>
+                        </div>
+                    `).join("")}</div>`
+                    : "<p>Açık görevi yok.</p>";
+
+                return `
+                    <div class="todo-card">
+                        <div class="todo-content">
+                            <div class="todo-title">🧑‍💻 ${m.fullName}</div>
+                            <div class="todo-meta">
+                                <span class="priority-badge priority-medium">${m.openTaskCount} açık görev</span>
+                                ${m.pendingApprovalCount > 0 ? `<span class="priority-badge status-pending">${m.pendingApprovalCount} onay bekliyor</span>` : ""}
+                                <span class="priority-badge status-approved">${m.completedTaskCount} tamamlandı</span>
+                                <span class="priority-badge status-progress">${avgLabel}</span>
+                            </div>
+                            ${activeTasksHtml}
+                        </div>
+                    </div>
+                `;
+            }).join("")
             : "<p>Bu ekipte henüz üye yok.</p>";
 
         container.innerHTML += `
@@ -448,9 +513,9 @@ function renderTeamsPanel(teamsData) {
     teamsData.forEach(team => {
         const membersHtml = team.members.length
             ? team.members.map(m => `
-                <span class="member-chip">
+                <span class="member-chip" onclick="openMemberDetailModal(${m.id})" style="cursor:pointer">
                     🧑‍💻 ${m.fullName}
-                    <button class="chip-remove" onclick="removeTeamMember(${team.id}, ${m.id})">❌</button>
+                    <button class="chip-remove" onclick="event.stopPropagation(); removeTeamMember(${team.id}, ${m.id})">❌</button>
                 </span>
             `).join("")
             : "<span>Henüz üye yok</span>";
@@ -1038,6 +1103,83 @@ function handoffTodo() {
             closeLogModal();
             getTodos();
         });
+}
+
+// Ekiplerim panelinde bir çalışanın adına tıklayınca açılan detay: profil bilgisi,
+// açık görevleri ve (varsa süresiyle) tamamladığı görevlerin geçmişi.
+let currentMemberDetail = null;
+
+function openMemberDetailModal(workerId) {
+    currentMemberDetail = workerId;
+    document.getElementById("memberDetailBody").innerHTML = "<p>Yükleniyor...</p>";
+    document.getElementById("memberDetailModal").style.display = "block";
+
+    authFetch(`${BASE_URL}/api/teams/members/${workerId}/detail`)
+        .then(res => {
+            if (!res.ok) throw new Error("Çalışan detayı alınamadı");
+            return res.json();
+        })
+        .then(data => renderMemberDetail(data))
+        .catch(err => {
+            document.getElementById("memberDetailBody").innerHTML = `<p>${err.message}</p>`;
+        });
+}
+
+function closeMemberDetailModal() {
+    document.getElementById("memberDetailModal").style.display = "none";
+    currentMemberDetail = null;
+}
+
+function renderMemberDetail(data) {
+    const avgLabel = data.avgCompletionDays != null ? `~${Math.round(data.avgCompletionDays)} gün ort.` : "–";
+
+    const activeTasksHtml = data.activeTasks.length
+        ? data.activeTasks.map(t => `
+            <div class="todo-card">
+                <div class="todo-content">
+                    <div class="todo-title">${t.title || ""}</div>
+                    ${dueDateBadge(t)}
+                    ${priorityBadge(t)}
+                </div>
+            </div>
+        `).join("")
+        : "<p>Açık görevi yok.</p>";
+
+    const completedTasksHtml = data.completedTasks.length
+        ? data.completedTasks.map(t => {
+            const date = t.completedAt ? new Date(t.completedAt).toLocaleString("tr-TR") : "-";
+            const duration = t.durationDays != null ? `${t.durationDays} gün` : "–";
+            return `
+                <div class="todo-card">
+                    <div class="todo-content">
+                        <div class="todo-title completed">${t.title || ""}</div>
+                        <div class="todo-meta">
+                            ${priorityBadge(t)}
+                            <span class="priority-badge status-approved">⏱️ ${duration}</span>
+                            <span class="todo-date">${date}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join("")
+        : "<p>Henüz tamamlanmış görevi yok.</p>";
+
+    document.getElementById("memberDetailBody").innerHTML = `
+        <div class="todo-meta">
+            <span class="priority-badge status-progress">👤 ${data.fullName} (${data.username})</span>
+            ${data.position ? `<span class="priority-badge priority-low">${data.position}</span>` : ""}
+        </div>
+        <div class="todo-meta">
+            <span class="priority-badge status-approved">${data.completedTaskCount} tamamlandı</span>
+            <span class="priority-badge priority-medium">${avgLabel}</span>
+        </div>
+
+        <h4>📋 Aktif Görevler</h4>
+        <div class="todo-list">${activeTasksHtml}</div>
+
+        <h4>✅ Tamamlanan Görevler</h4>
+        <div class="todo-list">${completedTasksHtml}</div>
+    `;
 }
 
 function logout() {

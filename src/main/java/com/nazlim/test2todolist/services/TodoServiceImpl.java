@@ -5,6 +5,7 @@ import com.nazlim.test2todolist.dto.AddNoteRequest;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
 import com.nazlim.test2todolist.dto.HandoffRequest;
 import com.nazlim.test2todolist.dto.RejectTodoRequest;
+import com.nazlim.test2todolist.dto.TodoHistoryResponse;
 import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
@@ -25,9 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 @Service
 public class TodoServiceImpl implements TodoService {
@@ -110,6 +114,12 @@ public class TodoServiceImpl implements TodoService {
                     && (existing.getApprovalStatus() == ApprovalStatus.PENDING
                         || existing.getApprovalStatus() == ApprovalStatus.REJECTED)) {
                 existing.setApprovalStatus(ApprovalStatus.NOT_APPLICABLE);
+            }
+        } else {
+            if (!wasCompleted && existing.isCompleted()) {
+                existing.setCompletedAt(Instant.now());
+            } else if (wasCompleted && !existing.isCompleted()) {
+                existing.setCompletedAt(null);
             }
         }
 
@@ -219,6 +229,7 @@ public class TodoServiceImpl implements TodoService {
 
         todo.setApprovalStatus(ApprovalStatus.APPROVED);
         todo.setRejectionReason(null);
+        todo.setCompletedAt(Instant.now());
 
         Todo saved = repo.save(todo);
         notificationService.notifyApproved(saved.getUser(), saved);
@@ -243,6 +254,19 @@ public class TodoServiceImpl implements TodoService {
         Todo saved = repo.save(todo);
         notificationService.notifyRejected(saved.getUser(), saved, request.reason());
         return TodoMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<TodoHistoryResponse> getMyHistory() {
+        AppUser currentUser = getCurrentUser();
+
+        List<Todo> personal = repo.findByUserAndAssignedByIsNullAndCompletedTrueOrderByCompletedAtDesc(currentUser);
+        List<Todo> assigned = repo.findByUserAndApprovalStatusOrderByCompletedAtDesc(currentUser, ApprovalStatus.APPROVED);
+
+        return Stream.concat(personal.stream(), assigned.stream())
+                .sorted(Comparator.comparing(Todo::getCompletedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(TodoMapper::toHistoryResponse)
+                .toList();
     }
 
     @Override

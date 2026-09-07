@@ -29,4 +29,12 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     long countByUserAndCompletedAndAssignedByIsNotNull(AppUser user, boolean completed);
 
     long countByUserAndApprovalStatus(AppUser user, ApprovalStatus approvalStatus);
+
+    List<Todo> findByUserAndAssignedByAndApprovalStatusOrderByCompletedAtDesc(AppUser user, AppUser assignedBy, ApprovalStatus approvalStatus);
+
+    List<Todo> findByUserAndAssignedByAndCompletedFalse(AppUser user, AppUser assignedBy);
+
+    List<Todo> findByUserAndApprovalStatusOrderByCompletedAtDesc(AppUser user, ApprovalStatus approvalStatus);
+
+    List<Todo> findByUserAndAssignedByIsNullAndCompletedTrueOrderByCompletedAtDesc(AppUser user);
 }

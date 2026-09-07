@@ -5,6 +5,7 @@ import com.nazlim.test2todolist.dto.TeamRequest;
 import com.nazlim.test2todolist.dto.TeamResponse;
 import com.nazlim.test2todolist.dto.TeamWorkloadResponse;
 import com.nazlim.test2todolist.dto.UserSummaryResponse;
+import com.nazlim.test2todolist.dto.WorkerDetailResponse;
 
 import java.util.List;
 
@@ -17,4 +18,5 @@ public interface TeamService {
     MyTeamResponse getMyTeam();
     List<UserSummaryResponse> getMyTeammates();
     List<TeamWorkloadResponse> getMyTeamsWorkload();
+    WorkerDetailResponse getMemberDetail(Long workerId);
 }

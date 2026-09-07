@@ -4,6 +4,7 @@ import com.nazlim.test2todolist.dto.AddNoteRequest;
 import com.nazlim.test2todolist.dto.AssignTodoRequest;
 import com.nazlim.test2todolist.dto.HandoffRequest;
 import com.nazlim.test2todolist.dto.RejectTodoRequest;
+import com.nazlim.test2todolist.dto.TodoHistoryResponse;
 import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
@@ -86,6 +87,11 @@ public class TodoController {
     @PreAuthorize("hasRole('MANAGER')")
     public TodoResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectTodoRequest req) {
         return service.reject(id, req != null ? req : new RejectTodoRequest(null));
+    }
+
+    @GetMapping("/history")
+    public List<TodoHistoryResponse> getMyHistory() {
+        return service.getMyHistory();
     }
 
     @GetMapping("/{id}/log")

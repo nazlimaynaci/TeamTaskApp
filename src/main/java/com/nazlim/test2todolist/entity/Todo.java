@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -44,6 +45,11 @@ public class Todo {
 
     @Column(nullable = false)
     private boolean reminderSent = false;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
+
+    private Instant completedAt;
 
     public Todo(Long id, String title, String description, boolean completed, LocalDate dueDate, String priority) {
         this.id = id;
@@ -136,5 +142,21 @@ public class Todo {
 
     public void setReminderSent(boolean reminderSent) {
         this.reminderSent = reminderSent;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
     }
 }

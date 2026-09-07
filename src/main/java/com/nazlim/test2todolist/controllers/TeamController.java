@@ -5,6 +5,7 @@ import com.nazlim.test2todolist.dto.TeamRequest;
 import com.nazlim.test2todolist.dto.TeamResponse;
 import com.nazlim.test2todolist.dto.TeamWorkloadResponse;
 import com.nazlim.test2todolist.dto.UserSummaryResponse;
+import com.nazlim.test2todolist.dto.WorkerDetailResponse;
 import com.nazlim.test2todolist.services.TeamService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,11 @@ public class TeamController {
     @GetMapping("/mine/workload")
     public List<TeamWorkloadResponse> getMyTeamsWorkload() {
         return service.getMyTeamsWorkload();
+    }
+
+    @GetMapping("/members/{workerId}/detail")
+    public WorkerDetailResponse getMemberDetail(@PathVariable Long workerId) {
+        return service.getMemberDetail(workerId);
     }
 
     @PutMapping("/{teamId}/members/{workerId}")

@@ -1,10 +1,13 @@
 package com.nazlim.test2todolist.mapper;
 
+import com.nazlim.test2todolist.dto.TodoHistoryResponse;
 import com.nazlim.test2todolist.dto.TodoLogEntryResponse;
 import com.nazlim.test2todolist.dto.TodoRequest;
 import com.nazlim.test2todolist.dto.TodoResponse;
 import com.nazlim.test2todolist.entity.Todo;
 import com.nazlim.test2todolist.entity.TodoLogEntry;
+
+import java.time.Duration;
 
 public class TodoMapper {
 
@@ -33,6 +36,23 @@ public class TodoMapper {
                 assigneeUsername,
                 todo.getApprovalStatus().name(),
                 todo.getRejectionReason()
+        );
+    }
+
+    public static TodoHistoryResponse toHistoryResponse(Todo todo) {
+        Long durationDays = (todo.getCreatedAt() != null && todo.getCompletedAt() != null)
+                ? Duration.between(todo.getCreatedAt(), todo.getCompletedAt()).toDays()
+                : null;
+        String assignedByName = todo.getAssignedBy() != null ? todo.getAssignedBy().getFullName() : null;
+
+        return new TodoHistoryResponse(
+                todo.getId(),
+                todo.getTitle(),
+                todo.getPriority(),
+                todo.getDueDate(),
+                todo.getCompletedAt(),
+                durationDays,
+                assignedByName
         );
     }
 

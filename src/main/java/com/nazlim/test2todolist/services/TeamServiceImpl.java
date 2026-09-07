@@ -6,11 +6,15 @@ import com.nazlim.test2todolist.dto.MyTeamResponse;
 import com.nazlim.test2todolist.dto.TeamRequest;
 import com.nazlim.test2todolist.dto.TeamResponse;
 import com.nazlim.test2todolist.dto.TeamWorkloadResponse;
+import com.nazlim.test2todolist.dto.TodoHistoryResponse;
 import com.nazlim.test2todolist.dto.UserSummaryResponse;
+import com.nazlim.test2todolist.dto.WorkerDetailResponse;
 import com.nazlim.test2todolist.entity.AppUser;
 import com.nazlim.test2todolist.entity.ApprovalStatus;
 import com.nazlim.test2todolist.entity.Role;
 import com.nazlim.test2todolist.entity.Team;
+import com.nazlim.test2todolist.entity.Todo;
+import com.nazlim.test2todolist.mapper.TodoMapper;
 import com.nazlim.test2todolist.repository.TeamRepository;
 import com.nazlim.test2todolist.repository.TodoRepository;
 import org.springframework.http.HttpStatus;
@@ -150,10 +154,67 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private MemberWorkloadResponse toWorkload(AppUser member) {
+        AppUser manager = getCurrentUser();
+
         long openTaskCount = todos.countByUserAndCompletedAndAssignedByIsNotNull(member, false);
         long pendingApprovalCount = todos.countByUserAndApprovalStatus(member, ApprovalStatus.PENDING);
 
-        return new MemberWorkloadResponse(member.getId(), member.getFullName(), member.getUsername(), openTaskCount, pendingApprovalCount);
+        List<Todo> activeTasks = todos.findByUserAndAssignedByAndCompletedFalse(member, manager);
+        List<Todo> completedTasks = todos.findByUserAndAssignedByAndApprovalStatusOrderByCompletedAtDesc(member, manager, ApprovalStatus.APPROVED);
+
+        return new MemberWorkloadResponse(
+                member.getId(),
+                member.getFullName(),
+                member.getUsername(),
+                openTaskCount,
+                pendingApprovalCount,
+                completedTasks.size(),
+                averageDurationDays(completedTasks),
+                activeTasks.stream().map(TodoMapper::toResponse).toList()
+        );
+    }
+
+    @Override
+    public WorkerDetailResponse getMemberDetail(Long workerId) {
+        AppUser manager = getCurrentUser();
+
+        AppUser worker = users.findById(workerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı"));
+
+        if (worker.getTeam() == null || !worker.getTeam().getManager().getId().equals(manager.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Çalışan bulunamadı");
+        }
+
+        List<Todo> activeTasks = todos.findByUserAndAssignedByAndCompletedFalse(worker, manager);
+        List<Todo> completedTasks = todos.findByUserAndAssignedByAndApprovalStatusOrderByCompletedAtDesc(worker, manager, ApprovalStatus.APPROVED);
+
+        List<TodoHistoryResponse> history = completedTasks.stream().map(TodoMapper::toHistoryResponse).toList();
+
+        return new WorkerDetailResponse(
+                worker.getId(),
+                worker.getFullName(),
+                worker.getUsername(),
+                worker.getEmail(),
+                worker.getPhone(),
+                worker.getPosition(),
+                completedTasks.size(),
+                averageDurationDays(completedTasks),
+                activeTasks.stream().map(TodoMapper::toResponse).toList(),
+                history
+        );
+    }
+
+    private Double averageDurationDays(List<Todo> completedTasks) {
+        List<Long> durations = completedTasks.stream()
+                .filter(t -> t.getCreatedAt() != null && t.getCompletedAt() != null)
+                .map(t -> java.time.Duration.between(t.getCreatedAt(), t.getCompletedAt()).toDays())
+                .toList();
+
+        if (durations.isEmpty()) {
+            return null;
+        }
+
+        return durations.stream().mapToLong(Long::longValue).average().orElse(0);
     }
 
     private Team getOwnedTeam(Long teamId, AppUser manager) {

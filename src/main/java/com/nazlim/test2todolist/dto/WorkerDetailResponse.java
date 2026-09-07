@@ -2,14 +2,16 @@ package com.nazlim.test2todolist.dto;
 
 import java.util.List;
 
-public record MemberWorkloadResponse(
+public record WorkerDetailResponse(
         Long id,
         String fullName,
         String username,
-        long openTaskCount,
-        long pendingApprovalCount,
+        String email,
+        String phone,
+        String position,
         long completedTaskCount,
         Double avgCompletionDays,
-        List<TodoResponse> activeTasks
+        List<TodoResponse> activeTasks,
+        List<TodoHistoryResponse> completedTasks
 ) {
 }
