@@ -220,6 +220,14 @@ a {
     opacity: 0.85;
 }
 
+.auth-status {
+    text-align: center;
+    margin-top: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    min-height: 16px;
+}
+
 /* Register'daki "Hesap Türü" seçici (.filter-tab'ı yeniden kullanıyor) cam
    temaya uysun diye - auth-card içindeyken override edilir. */
 .auth-card .filter-tab {
