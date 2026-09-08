@@ -8,6 +8,8 @@ log progress notes or hand a task off to a teammate mid-flight.
 Backend is Spring Boot (Java) with JWT auth over PostgreSQL. Frontend is plain HTML/CSS/JS —
 no framework, no build step.
 
+**🌐 Live:** [nazlim-task-manager-frontend.onrender.com](https://nazlim-task-manager-frontend.onrender.com)
+
 ---
 
 ## ✨ Features
@@ -150,7 +152,6 @@ Swagger UI (if enabled): `http://localhost:8080/swagger-ui/index.html`
   tests yet.
 - The default `JWT_SECRET` fallback has been visible in this repo's git history — a real
   random secret must be set via env var before deploying anywhere real.
-- Not yet deployed to a live host (Docker image + CI build exist, ready for that step).
 
 ---
 
